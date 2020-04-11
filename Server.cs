@@ -246,10 +246,12 @@ namespace DeZogPlugin
         {
             Console.WriteLine("ParseMessage");
             WriteCmd(data);
+            Console.WriteLine("data.Count={0}", data.Count);
 
             DzrpData = new List<byte>();
             int startIndex = HEADER_LEN_LENGTH + HEADER_CMD_SEQNO_LENGTH;
             DzrpData.AddRange(data.GetRange(startIndex, data.Count - startIndex));
+            receveivedSeqno = data[HEADER_LEN_LENGTH];
 
             // Interprete
             DZRP command = (DZRP)data[HEADER_LEN_LENGTH + 1];
@@ -316,11 +318,9 @@ namespace DeZogPlugin
          */
         public static void SendResponse(byte[] byteData)
         {
-            if (AsynchronousSocketListener.socket == null)
-                return;
             // Length
             int length = byteData.Length;
-            var wrapBuffer = new byte[length - HEADER_LEN_LENGTH + 1];
+            var wrapBuffer = new byte[length + HEADER_LEN_LENGTH + 1];
             wrapBuffer[0] = (byte)(length & 0xFF);
             wrapBuffer[1] = (byte)((length >> 8) & 0xFF);
             wrapBuffer[2] = (byte)((length >> 16) & 0xFF);
@@ -329,9 +329,7 @@ namespace DeZogPlugin
             byteData.CopyTo(wrapBuffer, HEADER_LEN_LENGTH + 1);
             receveivedSeqno = 0;    // Ready for next message.
             // Begin sending the data to the remote device.
-            Socket handler = AsynchronousSocketListener.socket.workSocket;
-            handler.BeginSend(wrapBuffer, 0, wrapBuffer.Length, 0,
-                new AsyncCallback(SendCallback), handler);
+            Send(wrapBuffer);
         }
 
 
