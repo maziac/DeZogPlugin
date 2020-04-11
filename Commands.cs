@@ -39,10 +39,10 @@ namespace DeZogPlugin
 
 
         // The breakpoint map to keep the IDs and addresses.
-        protected static Dictionary<ushort,ushort> BreakPointMap;
+        protected static Dictionary<ushort,ushort> BreakpointMap;
 
         // The last breakpoint ID used.
-        protected static ushort LastBreakPointId;
+        protected static ushort LastBreakpointId;
 
 
 
@@ -51,8 +51,8 @@ namespace DeZogPlugin
          */
         public static void Init()
         {
-            BreakPointMap = new Dictionary<ushort, ushort>();
-            LastBreakPointId = 0;
+            BreakpointMap = new Dictionary<ushort, ushort>();
+            LastBreakpointId = 0;
             TmpBreakpoint1 = 0;
             TmpBreakpoint2 = 0;
             // Clear all breakpoints etc.
@@ -223,11 +223,11 @@ namespace DeZogPlugin
         protected static ushort SetBreakpoint(ushort address)
         {
             // Set in CSpect (if not already existing)
-            if (!BreakPointMap.ContainsValue(address))
+            if (!BreakpointMap.ContainsValue(address))
                 Main.CSpect.Debugger(Plugin.eDebugCommand.SetBreakpoint, address);
             // Add to array (ID = element position + 1)
-            BreakPointMap.Add(++LastBreakPointId, address);
-            return LastBreakPointId;
+            BreakpointMap.Add(++LastBreakpointId, address);
+            return LastBreakpointId;
         }
 
 
@@ -238,12 +238,12 @@ namespace DeZogPlugin
         {
             // Remove
             ushort address;
-            if (BreakPointMap.TryGetValue(bpId, out address))
+            if (BreakpointMap.TryGetValue(bpId, out address))
             {
-                BreakPointMap.Remove(bpId);
+                BreakpointMap.Remove(bpId);
 
                 // Clear in CSpect (if no other breakpoint exists)
-                if (!BreakPointMap.ContainsValue(address))
+                if (!BreakpointMap.ContainsValue(address))
                     Main.CSpect.Debugger(Plugin.eDebugCommand.ClearBreakpoint, address);
             }
         }
@@ -269,36 +269,52 @@ namespace DeZogPlugin
             Main.CSpect.Debugger(Plugin.eDebugCommand.Run);
 
             // Respond
-            CSpectSocket.SendResponse(new byte[] { 0x01 });
+            CSpectSocket.SendResponse();
         }
+
 
         /**
          * Pauses execution.
          */
         public static void Pause()
         {
+            // Pause
+            Main.CSpect.Debugger(Plugin.eDebugCommand.Enter);
             // Respond
-            CSpectSocket.SendResponse(new byte[] { 0x01 });
+            CSpectSocket.SendResponse();
 
         }
+
 
         /**
          * Adds a breakpoint.
          */
         public static void AddBreakpoint()
         {
+            // Get breakpoint address
+            ushort bpAddr = CSpectSocket.GetDataWord();
+
+            // Set CSpect breakpoint
+            ushort bpId = SetBreakpoint(bpAddr);
+
             // Respond
-            CSpectSocket.SendResponse(new byte[] { 0x01 });
+            SetDword(bpId);
+            CSpectSocket.SendResponse(Data);
 
         }
+
 
         /**
          * Removes a breakpoint.
          */
         public static void RemoveBreakpoint()
         {
+            // Get breakpoint ID
+            ushort bpId = CSpectSocket.GetDataWord();
+            // Remove breakpoint
+            RemoveBreakpoint(bpId);
             // Respond
-            CSpectSocket.SendResponse(new byte[] { 0x01 });
+            CSpectSocket.SendResponse();
 
         }
 
