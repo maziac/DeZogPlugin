@@ -369,21 +369,66 @@ namespace DeZogPlugin
          */
         public static void WriteMem()
         {
-            // Respond
-            CSpectSocket.SendResponse(new byte[] { 0x01 });
+            // Skip reserved
+            Index++;
+            // Start of memory
+            ushort address = CSpectSocket.GetDataWord();
+            // Get size
+            ushort size = (ushort)(Data.Length-Index);
 
+            // Write memory
+            var cspect = Main.CSpect;
+            for (; size > 0; size--)
+            {
+                byte value = CSpectSocket.GetDataByte();
+                cspect.PokePhysical(address++, value);
+            }
+
+            // Respond
+            CSpectSocket.SendResponse();
         }
+
 
         /**
          * Returns the 8 slots.
          */
         public static void GetSlots()
         {
+            // Read slots
+            var cspect = Main.CSpect;
+            for (int i = 0; i < 8; i++)
+            {
+                byte bank = cspect.GetNextRegister((byte)(0x50 + i));
+                SetByte(bank);
+            }
             // Respond
-            CSpectSocket.SendResponse(new byte[] { 0x01 });
-
+            CSpectSocket.SendResponse();
         }
 
 
+
+        /**
+         * Returns the state.
+         */
+        public static void ReadState()
+        {
+            // TODO: No CSpect interface yet.
+
+            // Respond
+            CSpectSocket.SendResponse();
+        }
+
+
+
+        /**
+         * Writes the state.
+         */
+        public static void WriteState()
+        {
+            // TODO: No CSpect interface yet.
+
+            // Respond
+            CSpectSocket.SendResponse();
+        }
     }
 }

@@ -30,8 +30,10 @@ namespace DeZogPlugin
 	    CMD_READ_MEM=0xB,
 	    CMD_WRITE_MEM=0xC,
 
+        CMD_GET_SLOTS = 0xD,
 
-	    CMD_GET_SLOTS=0xD,
+        CMD_READ_STATE = 0xE,
+        CMD_WRITE_STATE = 0xF,
     }
 
 
@@ -308,6 +310,14 @@ namespace DeZogPlugin
 
                 case DZRP.CMD_GET_SLOTS:
                     Commands.GetSlots();
+                    break;
+
+                case DZRP.CMD_READ_STATE:
+                    Commands.ReadState();
+                    break;
+
+                case DZRP.CMD_WRITE_STATE:
+                    Commands.WriteState();
                     break;
 
 
