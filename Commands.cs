@@ -318,15 +318,17 @@ namespace DeZogPlugin
 
         }
 
+
         /**
          * Adds a watchpoint.
          */
         public static void AddWatchpoint()
         {
+            // TODO: Need to check if it is correct that watchpoints have no ID in DZRP.
             // Respond
-            CSpectSocket.SendResponse(new byte[] { 0x01 });
-
+            CSpectSocket.SendResponse(new byte[] { 1 });
         }
+
 
         /**
          * Removes a watchpoint.
@@ -334,19 +336,33 @@ namespace DeZogPlugin
         public static void RemoveWatchpoint()
         {
             // Respond
-            CSpectSocket.SendResponse(new byte[] { 0x01 });
-
+            CSpectSocket.SendResponse();
         }
+
 
         /**
          * Reads a memory area.
          */
         public static void ReadMem()
         {
-            // Respond
-            CSpectSocket.SendResponse(new byte[] { 0x01 });
+            // Skip reserved
+            Index++;
+            // Start of memory
+            ushort address = CSpectSocket.GetDataWord();
+            // Get size
+            ushort size = CSpectSocket.GetDataWord();
 
+            // Respond
+            InitData(size+1);
+            var cspect = Main.CSpect;
+            for (; size > 0; size--)
+            {
+                byte value = cspect.Peek(address++);
+                SetByte(value);
+            }
+            CSpectSocket.SendResponse(Data);
         }
+
 
         /**
          * Writes a memory area.
