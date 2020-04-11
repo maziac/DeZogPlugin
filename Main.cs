@@ -16,7 +16,7 @@ namespace DeZogPlugin
     public class Main : iPlugin
     {
 
-        public iCSpect CSpect;
+        public static iCSpect CSpect;
         public Settings Settings;
 
 

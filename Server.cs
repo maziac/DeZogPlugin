@@ -129,6 +129,7 @@ namespace DeZogPlugin
             // Init
             DzrpData = new List<byte>();
             receveivedSeqno = 0;
+            Commands.Init();
 
             // Get the socket that handles the client request.  
             Socket listener = (Socket)ar.AsyncState;
@@ -321,14 +322,14 @@ namespace DeZogPlugin
          * Used to retrieve one element from the buffer.
          * Returns the data or -1 if no data available.
          */
-        public static int GetDataByte()
+        public static byte GetDataByte()
         {
             // Check if daa available
             int count = DzrpData.Count;
             if (count == 0)
-                return -1;  // TODO: should create an error
+                return 0;  // TODO: should create an error
                             // Get value
-            int value = CSpectSocket.DzrpData[0];
+            byte value = CSpectSocket.DzrpData[0];
             // Remove it from fifo
             CSpectSocket.DzrpData.RemoveAt(0);
             Console.WriteLine("GetDataByte: Data.Count={0}", DzrpData.Count);
@@ -341,14 +342,14 @@ namespace DeZogPlugin
          * Used to retrieve 2 elements (a word) from the buffer.
          * Returns the data or -1 if no data available.
          */
-        public static int GetDataWord()
+        public static ushort GetDataWord()
         {
             // Check if data available
             int count = DzrpData.Count;
             if (count < 2)
-                return -1; // TODO: should create an error
+                return 0; // TODO: should create an error
                            // Get value
-            int value = CSpectSocket.DzrpData[0] + 256 * CSpectSocket.DzrpData[0];
+            ushort value = (ushort)(CSpectSocket.DzrpData[0] + 256 * CSpectSocket.DzrpData[0]);
             // Remove it from fifo
             CSpectSocket.DzrpData.RemoveAt(0);
             CSpectSocket.DzrpData.RemoveAt(0);
@@ -361,17 +362,18 @@ namespace DeZogPlugin
         /**
          * Sends the response.
          */
-        public static void SendResponse(byte[] byteData)
+        public static void SendResponse(byte[] byteData=null)
         {
             // Length
-            int length = byteData.Length;
+            int length = (byteData != null) ? byteData.Length : 0;
             var wrapBuffer = new byte[length + HEADER_LEN_LENGTH + 1];
             wrapBuffer[0] = (byte)(length & 0xFF);
             wrapBuffer[1] = (byte)((length >> 8) & 0xFF);
             wrapBuffer[2] = (byte)((length >> 16) & 0xFF);
             wrapBuffer[3] = (byte)(length >> 24);
             wrapBuffer[4] = receveivedSeqno;
-            byteData.CopyTo(wrapBuffer, HEADER_LEN_LENGTH + 1);
+            if(byteData!=null)
+                byteData.CopyTo(wrapBuffer, HEADER_LEN_LENGTH + 1);
             receveivedSeqno = 0;    // Ready for next message.
             // Begin sending the data to the remote device.
             Send(wrapBuffer);
