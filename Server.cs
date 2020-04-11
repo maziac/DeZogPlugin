@@ -7,19 +7,6 @@ using System.Text;
 using System.Threading;
 
 
-/*
- * The used socket protocol is simple. It consists of header and payload.
- *
- * Message:
- * int Length: The length of the following bytes containing Command. Little endian. Size=4.
- * byte SeqNo:  Sequence number (must be returned in response)
- * byte Command: UART_DATA.
- * Payload bytes: The data
- *
- * A client may connect at anytime.
- * A connection is terminated only by the client.
- * If a connection has been terminated a new connection can be established.
- */
 
 
 namespace DeZogPlugin
@@ -68,7 +55,20 @@ namespace DeZogPlugin
     }
 
 
-    public class AsynchronousSocketListener
+    /*
+     * The used socket protocol is simple. It consists of header and payload.
+     *
+     * Message:
+     * int Length: The length of the following bytes containing Command. Little endian. Size=4.
+     * byte SeqNo:  Sequence number (must be returned in response)
+     * byte Command: UART_DATA.
+     * Payload bytes: The data
+     *
+     * A client may connect at anytime.
+     * A connection is terminated only by the client.
+     * If a connection has been terminated a new connection can be established.
+     */
+    public class CSpectSocket
     {
         // The used port
         public static int Port;
@@ -93,7 +93,7 @@ namespace DeZogPlugin
          */
         public static void StartListening()
         {
-            AsynchronousSocketListener.socket = null;
+            CSpectSocket.socket = null;
 
             // Establish the local endpoint for the socket.  
             IPAddress ipAddress = IPAddress.Loopback;   // localhost
@@ -139,7 +139,7 @@ namespace DeZogPlugin
             StateObject state = new StateObject();
             state.workSocket = handler;
             handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
-            AsynchronousSocketListener.socket = state;
+            CSpectSocket.socket = state;
 
             Console.WriteLine("Connected.");
         }
@@ -257,13 +257,58 @@ namespace DeZogPlugin
             DZRP command = (DZRP)data[HEADER_LEN_LENGTH + 1];
             switch (command)
             {
-                // UART data received
                 case DZRP.CMD_GET_CONFIG:
-                    {
-                        // Return configuration
-                        SendResponse(new byte[] { 0x01 });
-                    }
+                    Commands.GetConfig();
                     break;
+
+                case DZRP.CMD_GET_REGISTERS:
+                    Commands.GetRegisters();
+                    break;
+
+                case DZRP.CMD_SET_REGISTER:
+                    Commands.SetRegister();
+                    break;
+
+                case DZRP.CMD_WRITE_BANK:
+                    Commands.WriteBank();
+                    break;
+
+                case DZRP.CMD_CONTINUE:
+                    Commands.Continue();
+                    break;
+
+                case DZRP.CMD_PAUSE:
+                    Commands.Pause();
+                    break;
+
+                case DZRP.CMD_ADD_BREAKPOINT:
+                    Commands.AddBreakpoint();
+                    break;
+
+                case DZRP.CMD_REMOVE_BREAKPOINT:
+                    Commands.RemoveBreakpoint();
+                    break;
+
+                case DZRP.CMD_ADD_WATCHPOINT:
+                    Commands.AddWatchpoint();
+                    break;
+
+                case DZRP.CMD_REMOVE_WATCHPOINT:
+                    Commands.RemoveWatchpoint();
+                    break;
+
+                case DZRP.CMD_READ_MEM:
+                    Commands.ReadMem();
+                    break;
+
+                case DZRP.CMD_WRITE_MEM:
+                    Commands.WriteMem();
+                    break;
+
+                case DZRP.CMD_GET_SLOTS:
+                    Commands.GetSlots();
+                    break;
+
 
                 default:
                     Console.WriteLine("  Unexpected command {0}", command);
@@ -283,9 +328,9 @@ namespace DeZogPlugin
             if (count == 0)
                 return -1;  // TODO: should create an error
                             // Get value
-            int value = AsynchronousSocketListener.DzrpData[0];
+            int value = CSpectSocket.DzrpData[0];
             // Remove it from fifo
-            AsynchronousSocketListener.DzrpData.RemoveAt(0);
+            CSpectSocket.DzrpData.RemoveAt(0);
             Console.WriteLine("GetDataByte: Data.Count={0}", DzrpData.Count);
             // Return
             return value;
@@ -303,10 +348,10 @@ namespace DeZogPlugin
             if (count < 2)
                 return -1; // TODO: should create an error
                            // Get value
-            int value = AsynchronousSocketListener.DzrpData[0] + 256 * AsynchronousSocketListener.DzrpData[0];
+            int value = CSpectSocket.DzrpData[0] + 256 * CSpectSocket.DzrpData[0];
             // Remove it from fifo
-            AsynchronousSocketListener.DzrpData.RemoveAt(0);
-            AsynchronousSocketListener.DzrpData.RemoveAt(0);
+            CSpectSocket.DzrpData.RemoveAt(0);
+            CSpectSocket.DzrpData.RemoveAt(0);
             Console.WriteLine("GetDataWord: Data.Count={0}", DzrpData.Count);
             // Return
             return value;
@@ -338,11 +383,11 @@ namespace DeZogPlugin
          */
         public static void Send(byte[] byteData)
         {
-            if (AsynchronousSocketListener.socket == null)
+            if (CSpectSocket.socket == null)
                 return;
 
             // Begin sending the data to the remote device.
-            Socket handler = AsynchronousSocketListener.socket.workSocket;
+            Socket handler = CSpectSocket.socket.workSocket;
             handler.BeginSend(byteData, 0, byteData.Length, 0,
                 new AsyncCallback(SendCallback), handler);
         }

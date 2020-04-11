@@ -32,8 +32,8 @@ namespace DeZogPlugin
             Settings = Settings.Load();
 
             //Server.Listen(Settings.Port);
-            AsynchronousSocketListener.Port = Settings.Port;
-            AsynchronousSocketListener.StartListening();
+            CSpectSocket.Port = Settings.Port;
+            CSpectSocket.StartListening();
 
             CSpect = _CSpect;
 
