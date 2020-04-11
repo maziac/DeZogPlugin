@@ -143,7 +143,8 @@ namespace DeZogPlugin
             // Get new value
             ushort value = CSpectSocket.GetDataWord();
             // Get registers
-            var regs = Main.CSpect.GetRegs();
+            var cspect = Main.CSpect;
+            var regs = cspect.GetRegs();
             // Set a specific register
             switch (regNumber)
             {
@@ -187,9 +188,12 @@ namespace DeZogPlugin
                     // TODO: Error
                     break;
             }
+
+            // Set register(s)
+            cspect.SetRegs(regs);
+
             // Respond
             CSpectSocket.SendResponse();
-
         }
 
 
@@ -234,7 +238,7 @@ namespace DeZogPlugin
         /**
          * Removes a breakpoint.
          */
-        protected static void RemoveBreakpoint(ushort bpId)
+        protected static void DeleteBreakpoint(ushort bpId)
         {
             // Remove
             ushort address;
@@ -263,7 +267,7 @@ namespace DeZogPlugin
 
             // Set temporary breakpoints
             TmpBreakpoint1 = (bp1Enable) ? SetBreakpoint(bp1Address) : (ushort)0;
-            TmpBreakpoint2 = (bp1Enable) ? SetBreakpoint(bp2Address) : (ushort)0;
+            TmpBreakpoint2 = (bp2Enable) ? SetBreakpoint(bp2Address) : (ushort)0;
 
             // Run
             Main.CSpect.Debugger(Plugin.eDebugCommand.Run);
@@ -298,6 +302,7 @@ namespace DeZogPlugin
             ushort bpId = SetBreakpoint(bpAddr);
 
             // Respond
+            InitData(2);
             SetDword(bpId);
             CSpectSocket.SendResponse(Data);
 
@@ -312,7 +317,7 @@ namespace DeZogPlugin
             // Get breakpoint ID
             ushort bpId = CSpectSocket.GetDataWord();
             // Remove breakpoint
-            RemoveBreakpoint(bpId);
+            DeleteBreakpoint(bpId);
             // Respond
             CSpectSocket.SendResponse();
 
@@ -346,14 +351,15 @@ namespace DeZogPlugin
         public static void ReadMem()
         {
             // Skip reserved
-            Index++;
+            CSpectSocket.GetDataByte();
             // Start of memory
             ushort address = CSpectSocket.GetDataWord();
             // Get size
             ushort size = CSpectSocket.GetDataWord();
+            Console.WriteLine("address={0}, size={1}", address, size);
 
             // Respond
-            InitData(size+1);
+            InitData(size);
             var cspect = Main.CSpect;
             for (; size > 0; size--)
             {
@@ -370,18 +376,19 @@ namespace DeZogPlugin
         public static void WriteMem()
         {
             // Skip reserved
-            Index++;
+            CSpectSocket.GetDataByte();
             // Start of memory
             ushort address = CSpectSocket.GetDataWord();
             // Get size
-            ushort size = (ushort)(Data.Length-Index);
+            var data = CSpectSocket.GetRemainingData();
+            ushort size = (ushort)data.Count;
 
             // Write memory
             var cspect = Main.CSpect;
-            for (; size > 0; size--)
+            for (int i=0; i<size; i++)
             {
-                byte value = CSpectSocket.GetDataByte();
-                cspect.PokePhysical(address++, value);
+                byte value = data[i];
+                cspect.Poke(address++, value);
             }
 
             // Respond

@@ -76,14 +76,14 @@ namespace DeZogPlugin
         public static int Port;
 
         // The received data.
-        public static List<byte> DzrpData = new List<byte>();
+        protected static List<byte> DzrpData = new List<byte>();
 
         // The connected client.
-        public static StateObject socket = null;
+        protected static StateObject socket = null;
 
         // Constants for the header parameters.
-        public const int HEADER_LEN_LENGTH = 4;
-        public const int HEADER_CMD_SEQNO_LENGTH = 2;
+        protected const int HEADER_LEN_LENGTH = 4;
+        protected const int HEADER_CMD_SEQNO_LENGTH = 2;
 
         // Stores the received sequence number.
         protected static byte receveivedSeqno = 0;
@@ -95,7 +95,7 @@ namespace DeZogPlugin
          */
         public static void StartListening()
         {
-            CSpectSocket.socket = null;
+            socket = null;
 
             // Establish the local endpoint for the socket.  
             IPAddress ipAddress = IPAddress.Loopback;   // localhost
@@ -358,14 +358,24 @@ namespace DeZogPlugin
             int count = DzrpData.Count;
             if (count < 2)
                 return 0; // TODO: should create an error
-                           // Get value
-            ushort value = (ushort)(CSpectSocket.DzrpData[0] + 256 * CSpectSocket.DzrpData[0]);
+                          // Get value
+            ushort value = (ushort)(CSpectSocket.DzrpData[0] + 256 * CSpectSocket.DzrpData[1]);
             // Remove it from fifo
-            CSpectSocket.DzrpData.RemoveAt(0);
-            CSpectSocket.DzrpData.RemoveAt(0);
+            DzrpData.RemoveAt(0);
+            DzrpData.RemoveAt(0);
             Console.WriteLine("GetDataWord: Data.Count={0}", DzrpData.Count);
             // Return
             return value;
+        }
+
+
+        /**
+          * Returns the data buffer.
+          */
+        public static List<byte> GetRemainingData()
+        {
+            // Return
+            return DzrpData;
         }
 
 
