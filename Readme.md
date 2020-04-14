@@ -1,14 +1,28 @@
-﻿# CSpect Plugin - Socket
+﻿# DeZog Cspect Plugin
 
-This is a [CSpect](http://www.cspect.org) plugin that establishes a listenign socket.
-DeZog will connect this socket when a debug session is started.
+The Dezog plugin allows to connect [DeZog](https://github.com/maziac/DeZog) with [CSpect](http://www.cspect.org).
+I.e. you can use the DeZog IDE and run/debug your program in CSpect.
+
+This plugin establishes a listening socket (default port 11000).
+DeZog will connect to this socket when a debug session is started.
 
 
 # State
 
-Currently the plugin does connect the UART to a socket in RX and TX direction.
-But it has not been tested yet.
-I.e. this is an early development state. Don't expect it to work.
+The plugin is working with CSpect v2.12.17.
+The state is: it is working but still experimental.
+
+What should work is:
+- Continue/StepInto/StepOver/StepOut (see "Known Problems")
+- Lite reverse stepping
+- Memory display
+- Register display
+- Setting breakpoints
+
+What's not working/not tested:
+- Breakpoint conditions (not tested)
+- Watchpoints
+- Sprite display
 
 
 # Plugin Installation
@@ -18,7 +32,10 @@ Most probably this will work on Windows as well but has not been tested.
 
 Place the DeZogpPlugin.dll (and the DeZogpPlugin.dll.config) in the root directory of CSpect (i.e. at the same level as the CSpect.exe program).
 Once you start CSpect it will automatically start the plugin.
-If everything works well you will see a message in the console: "DeZogp plugin started."
+If everything works well you will see a message in the console: "DeZog plugin started."
+
+For the DeZog configuration see [DeZog](https://github.com/maziac/DeZog).
+Basically you need to create a launch.json with and set the port (if different from default).
 
 
 # Build
@@ -35,6 +52,7 @@ In the Cpect directory a link can be made (ln) to the dll, so it is not required
 The DeZog plugin starts to listen for a socket connection on startup at port 11000.
 You can change the used port by providing a different port number in the DeZogPlugin.dll.config file.
 
+
 ## Socket Protocol
 
 Please see [DZRP-DeZog Remote Protocol](https://github.com/maziac/DeZog/blob/master/design/DeZogProtocol.md).
@@ -42,7 +60,11 @@ Please see [DZRP-DeZog Remote Protocol](https://github.com/maziac/DeZog/blob/mas
 
 # Known Problems
 
-
+- StepOut:
+  - A break/pause during StepOut is not working.
+  - Does not break if running over a breakout.
+  - Flickering of CSpect display.
+- Break reasons not displayed.
 
 
 # Acknowledgements
