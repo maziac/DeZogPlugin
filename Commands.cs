@@ -330,13 +330,14 @@ namespace DeZogPlugin
             Int32 physAddress = bankNumber * 0x2000;
             // Write memory
             var cspect = Main.CSpect;
-            /* TODO: ENABLE
+            // TODO: ENABLE
+            Console.WriteLine("WriteBank: bank={0}", bankNumber);
             for (int i=0x2000; i>0; i--)
             {
                 byte value = CSpectSocket.GetDataByte();
                 cspect.PokePhysical(physAddress++, value);
             }
-            */
+            
             // Respond
             CSpectSocket.SendResponse();
 
