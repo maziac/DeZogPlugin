@@ -1,9 +1,9 @@
-﻿# DeZog Cspect Plugin
+﻿# DeZog CSpect Plugin
 
-The Dezog plugin allows to connect [DeZog](https://github.com/maziac/DeZog) with [CSpect](http://www.cspect.org).
+This Dezog  CSpect Plugin allows to connect [DeZog](https://github.com/maziac/DeZog) with [CSpect](http://www.cspect.org).
 I.e. you can use the DeZog IDE and run/debug your program in CSpect.
 
-This plugin establishes a listening socket (default port 11000).
+This plugin establishes a listening socket.
 DeZog will connect to this socket when a debug session is started.
 
 
@@ -40,6 +40,12 @@ For the DeZog configuration see [DeZog](https://github.com/maziac/DeZog).
 Basically you need to create a launch.json with and set the port (if different from default).
 
 You can start CSpect without any (Z80) program. The program is being transferred by DeZog when the debug session is started.
+
+If you use CSpect under macOs or Linux you need to install Mono.
+A typical commandline to start CSpect looks like:
+~~~
+mono CSpect.exe -w4 -zxnext -nextrom -exit -brk -tv
+~~~
 
 
 # Build
