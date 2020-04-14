@@ -24,9 +24,24 @@ using System.Threading;
 
 namespace DeZogPlugin
 {
-
+    /**
+     * Handles the sokcet commands, responses and notifications.
+     */
     public class Commands
     {
+        /**
+         * The break reason.
+         */
+        protected enum BreakReason
+        {
+            NO_REASON = 0,
+            MANUAL_BREAK = 1,
+            BREAKPOINT_HIT = 2,
+            WATCHPOINT_READ = 3,
+            WATCHPOINT_WRITE = 4,
+        }
+
+
         // Index for setting a byte in the array.
         protected static int Index;
 
@@ -44,25 +59,61 @@ namespace DeZogPlugin
         // The last breakpoint ID used.
         protected static ushort LastBreakpointId;
 
+        // Action queue.
+        protected static List<Action> ActionQueue = new List<Action>();
 
+        // Stores the previous debugger state.
+        protected static bool CpuRunning = false;
 
         /**
          * General initalization function.
          */
         public static void Init()
         {
+            ActionQueue = new List<Action>();
             BreakpointMap = new Dictionary<ushort, ushort>();
             LastBreakpointId = 0;
             TmpBreakpoint1 = 0;
             TmpBreakpoint2 = 0;
+            CpuRunning = false;
+            StartCpu(false);
+
             // Clear all breakpoints etc.
             var cspect = Main.CSpect;
+            /*
             for (int addr = 0; addr < 0x10000; addr++)
             {
                 cspect.Debugger(Plugin.eDebugCommand.ClearBreakpoint, addr);
                 cspect.Debugger(Plugin.eDebugCommand.ClearReadBreakpoint, addr);
                 cspect.Debugger(Plugin.eDebugCommand.ClearWriteBreakpoint, addr);
             }
+            */
+            // Disable CSpect debugger screen
+            //cspect.Debugger(Plugin.eDebugCommand.SetRemote, 1);
+            //  cspect.Debugger(Plugin.eDebugCommand.Run);  // TODO
+            /*
+             * lock (ActionQueue)
+            {
+                ActionQueue.Add(() =>
+                {
+                    Main.CSpect.Debugger(Plugin.eDebugCommand.Run);
+                });
+            }
+            */
+        }
+
+
+        /**
+         * Start/stop debugger.
+         */
+        protected static void StartCpu(bool start)
+        {
+            CpuRunning = start;
+            var cspect = Main.CSpect;
+            if (start)
+                cspect.Debugger(Plugin.eDebugCommand.Run);
+            else
+                cspect.Debugger(Plugin.eDebugCommand.Enter);
         }
 
 
@@ -73,6 +124,57 @@ namespace DeZogPlugin
         {
             Index = 0;
             Data = new byte[size];
+        }
+
+
+        /**
+         * Called on every tick.
+         */
+        static int counter = 0;
+        public static void Tick()
+        {
+            if (counter == 100)
+            {
+                Console.WriteLine("RUN");
+                var csp = Main.CSpect;
+                for (int addr = 0x80F8; addr < 0x80F9; addr++)
+                {
+                    csp.Debugger(Plugin.eDebugCommand.SetBreakpoint, addr);
+                    csp.Debugger(Plugin.eDebugCommand.SetBreakpoint, addr);
+                    Console.WriteLine(csp.Debugger(Plugin.eDebugCommand.GetBreakpoint, addr));
+                    csp.Debugger(Plugin.eDebugCommand.ClearReadBreakpoint, addr);
+                    csp.Debugger(Plugin.eDebugCommand.ClearWriteBreakpoint, addr);
+                }
+                Main.CSpect.Debugger(Plugin.eDebugCommand.Run);
+                Console.WriteLine("RUNdone " );
+            }
+
+            // Check if something to send
+            int count = ActionQueue.Count;
+            if (count > 0)
+            {
+                lock (ActionQueue)
+                {
+                    for (int i = 0; i < 0; i++)
+                        ActionQueue[i].Invoke();
+                    ActionQueue.Clear();
+                }
+            }
+
+            // Check if debugger state changed
+            var cspect = Main.CSpect;
+            var debugState = cspect.Debugger(Plugin.eDebugCommand.GetState);
+            bool running = (debugState == 0);
+            if(CpuRunning != running)
+            {
+                // State changed
+                CpuRunning = running;
+                if(CpuRunning==false)
+                {
+                    // Send break notification
+                    SendPauseNotification(BreakReason.MANUAL_BREAK, 0);
+                }
+            }
         }
 
 
@@ -142,6 +244,7 @@ namespace DeZogPlugin
             byte regNumber = CSpectSocket.GetDataByte();
             // Get new value
             ushort value = CSpectSocket.GetDataWord();
+            ushort valueByte = (ushort)(value & 0xFF);
             // Get registers
             var cspect = Main.CSpect;
             var regs = cspect.GetRegs();
@@ -163,26 +266,26 @@ namespace DeZogPlugin
 
                 case 13: regs.IM = (byte)value; break;
 
-                case 15: regs.AF = (ushort)((regs.AF & 0xFF00) + value); break;  // F
-                case 16: regs.AF = (ushort)((regs.AF & 0xFF) + 256*value); break;  // A
-                case 17: regs.BC = (ushort)((regs.AF & 0xFF00) + value); break;  // C
-                case 18: regs.BC = (ushort)((regs.AF & 0xFF) + 256 * value); break;  // B
-                case 19: regs.DE = (ushort)((regs.AF & 0xFF00) + value); break;  // E
-                case 20: regs.DE = (ushort)((regs.AF & 0xFF) + 256 * value); break;  // D
-                case 21: regs.HL = (ushort)((regs.AF & 0xFF00) + value); break;  // L
-                case 22: regs.HL = (ushort)((regs.AF & 0xFF) + 256 * value); break;  // H
-                case 23: regs.IX = (ushort)((regs.AF & 0xFF00) + value); break;  // IXL
-                case 24: regs.IX = (ushort)((regs.AF & 0xFF) + 256 * value); break;  // IXH
-                case 25: regs.IY = (ushort)((regs.AF & 0xFF00) + value); break;  // IYL
-                case 26: regs.IY = (ushort)((regs.AF & 0xFF) + 256 * value); break;  // IYH
-                case 27: regs._AF = (ushort)((regs.AF & 0xFF00) + value); break;  // F'
-                case 28: regs._AF = (ushort)((regs.AF & 0xFF) + 256 * value); break;  // A'
-                case 29: regs._BC = (ushort)((regs.AF & 0xFF00) + value); break;  // C'
-                case 30: regs._BC = (ushort)((regs.AF & 0xFF) + 256 * value); break;  // B'
-                case 31: regs._DE = (ushort)((regs.AF & 0xFF00) + value); break;  // E'
-                case 32: regs._DE = (ushort)((regs.AF & 0xFF) + 256 * value); break;  // D'
-                case 33: regs._HL = (ushort)((regs.AF & 0xFF00) + value); break;  // L'
-                case 34: regs._HL = (ushort)((regs.AF & 0xFF) + 256 * value); break;  // H'
+                case 14: regs.AF = (ushort)((regs.AF & 0xFF00) + valueByte); break;  // F
+                case 15: regs.AF = (ushort)((regs.AF & 0xFF) + 256* valueByte); break;  // A
+                case 16: regs.BC = (ushort)((regs.BC & 0xFF00) + valueByte); break;  // C
+                case 17: regs.BC = (ushort)((regs.BC & 0xFF) + 256 * valueByte); break;  // B
+                case 18: regs.DE = (ushort)((regs.DE & 0xFF00) + valueByte); break;  // E
+                case 19: regs.DE = (ushort)((regs.DE & 0xFF) + 256 * valueByte); break;  // D
+                case 20: regs.HL = (ushort)((regs.HL & 0xFF00) + valueByte); break;  // L
+                case 21: regs.HL = (ushort)((regs.HL & 0xFF) + 256 * valueByte); break;  // H
+                case 22: regs.IX = (ushort)((regs.IX & 0xFF00) + valueByte); break;  // IXL
+                case 23: regs.IX = (ushort)((regs.IX & 0xFF) + 256 * valueByte); break;  // IXH
+                case 24: regs.IY = (ushort)((regs.IY & 0xFF00) + valueByte); break;  // IYL
+                case 25: regs.IY = (ushort)((regs.IY & 0xFF) + 256 * valueByte); break;  // IYH
+                case 26: regs._AF = (ushort)((regs._AF & 0xFF00) + valueByte); break;  // F'
+                case 27: regs._AF = (ushort)((regs._AF & 0xFF) + 256 * valueByte); break;  // A'
+                case 28: regs._BC = (ushort)((regs._BC & 0xFF00) + valueByte); break;  // C'
+                case 29: regs._BC = (ushort)((regs._BC & 0xFF) + 256 * valueByte); break;  // B'
+                case 30: regs._DE = (ushort)((regs._DE & 0xFF00) + valueByte); break;  // E'
+                case 31: regs._DE = (ushort)((regs._DE & 0xFF) + 256 * valueByte); break;  // D'
+                case 32: regs._HL = (ushort)((regs._HL & 0xFF00) + valueByte); break;  // L'
+                case 33: regs._HL = (ushort)((regs._HL & 0xFF) + 256 * valueByte); break;  // H'
 
                 default:
                     // TODO: Error
@@ -209,11 +312,13 @@ namespace DeZogPlugin
             Int32 physAddress = bankNumber * 0x2000;
             // Write memory
             var cspect = Main.CSpect;
+            /* TODO: ENABLE
             for (int i=0x2000; i>0; i--)
             {
                 byte value = CSpectSocket.GetDataByte();
                 cspect.PokePhysical(physAddress++, value);
             }
+            */
             // Respond
             CSpectSocket.SendResponse();
 
@@ -270,7 +375,18 @@ namespace DeZogPlugin
             TmpBreakpoint2 = (bp2Enable) ? SetBreakpoint(bp2Address) : (ushort)0;
 
             // Run
+            Console.WriteLine("Continue: Run debugger.");
             Main.CSpect.Debugger(Plugin.eDebugCommand.Run);
+
+            /*
+            lock (ActionQueue)
+            {
+                ActionQueue.Add(() =>
+                {
+                    Main.CSpect.Debugger(Plugin.eDebugCommand.Run);
+                });
+            }
+            */
 
             // Respond
             CSpectSocket.SendResponse();
@@ -283,7 +399,17 @@ namespace DeZogPlugin
         public static void Pause()
         {
             // Pause
+            Console.WriteLine("Pause: Stop debugger.");
             Main.CSpect.Debugger(Plugin.eDebugCommand.Enter);
+            /*
+            lock (ActionQueue)
+            {
+               ActionQueue.Add(() =>
+                {
+                    Main.CSpect.Debugger(Plugin.eDebugCommand.Enter);
+                });
+            }
+            */
             // Respond
             CSpectSocket.SendResponse();
 
@@ -413,7 +539,6 @@ namespace DeZogPlugin
         }
 
 
-
         /**
          * Returns the state.
          */
@@ -426,13 +551,24 @@ namespace DeZogPlugin
         }
 
 
-
         /**
          * Writes the state.
          */
         public static void WriteState()
         {
             // TODO: No CSpect interface yet.
+
+            // Respond
+            CSpectSocket.SendResponse();
+        }
+
+
+        /**
+         * Sends the pause notification.
+         */
+        protected static void SendPauseNotification(BreakReason reason, int bpId)
+        {
+
 
             // Respond
             CSpectSocket.SendResponse();

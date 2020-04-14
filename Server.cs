@@ -88,6 +88,9 @@ namespace DeZogPlugin
         // Stores the received sequence number.
         protected static byte receveivedSeqno = 0;
 
+        // Set to true to enable logging.
+        public static bool LogEnabled;
+
 
         /**
          * Call this to start listiening on 'Port'.
@@ -111,7 +114,7 @@ namespace DeZogPlugin
                 listener.Bind(localEndPoint);
                 listener.Listen(1);
 
-                Console.WriteLine("UartSocket: Waiting for a connection on port {0} (localhost)...", Port);
+                Console.WriteLine("DeZog plugin: Waiting for a connection on port {0} (localhost)...", Port);
 
                 // Start an asynchronous socket to listen for connections.  
                 listener.BeginAccept(new AsyncCallback(AcceptCallback), listener);
@@ -154,16 +157,18 @@ namespace DeZogPlugin
          */
         public static void ReadCallback(IAsyncResult ar)
         {
-            if (receveivedSeqno != 0)
-            {
-                // If this happens a response has not been sent for the previous message.
-                // TODO: error handling
-            }
-
-            // Retrieve the state object and the handler socket  
             // from the asynchronous state object.  
             StateObject state = (StateObject)ar.AsyncState;
             Socket handler = state.workSocket;
+
+            try
+            {
+                // Retrieve the state object and the handler socket  
+               if (receveivedSeqno != 0)
+                {
+                    // If this happens a response has not been sent for the previous message.
+                    throw new Exception("Message received before command last response was sent.");
+                }
 
                 // Read data from the client socket.   
                 int bytesRead = handler.EndReceive(ar);
@@ -185,59 +190,64 @@ namespace DeZogPlugin
 
                 // Add data
                 List<byte> readData = new List<byte>(state.buffer);
-                Console.WriteLine("Data before: " + GetStringFromData(state.Data));
-                Console.WriteLine("Added data:  " + GetStringFromData(readData, 0, bytesRead));
+                Console.WriteLine("Data before: " + GetStringFromData(state.Data.ToArray()));
+                Console.WriteLine("Added data:  " + GetStringFromData(readData.ToArray(), 0, bytesRead));
                 state.Data.AddRange(readData.GetRange(0, bytesRead));
 
                 // Check if header was already previously received.
                 int len = state.Data.Count;
                 Console.WriteLine("Len={0}", len);
-            while (len > 0)
-            {
-                if (state.MsgLength == 0)
+                while (len > 0)
                 {
-                    // Check if header is complete
-                    if (len >= HEADER_LEN_LENGTH)
+                    if (state.MsgLength == 0)
                     {
-                        // Header received -> Decode length
-                        int length = state.Data[0];
-                        length += state.Data[1] << 8;
-                        length += state.Data[2] << 16;
-                        length += state.Data[3] << 24;
-                        if (length < HEADER_CMD_SEQNO_LENGTH)
+                        // Check if header is complete
+                        if (len >= HEADER_LEN_LENGTH)
                         {
-                            // Wrong length detected
-                            state.error = true;
-                            Console.WriteLine("Length too short ({0}). Stopping communication. Please reconnect.", length);
-                            handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
-                            return;
+                            // Header received -> Decode length
+                            int length = state.Data[0];
+                            length += state.Data[1] << 8;
+                            length += state.Data[2] << 16;
+                            length += state.Data[3] << 24;
+                            if (length < HEADER_CMD_SEQNO_LENGTH)
+                            {
+                                // Wrong length detected
+                                state.error = true;
+                                Console.WriteLine("Length too short ({0}). Stopping communication. Please reconnect.", length);
+                                handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
+                                return;
+                            }
+                            Console.WriteLine("Received Length={0}", length);
+                            state.MsgLength = length;
                         }
-                        Console.WriteLine("Received Length={0}", length);
-                        state.MsgLength = length;
                     }
+
+                    int totalLength = HEADER_LEN_LENGTH + state.MsgLength;
+                    //Console.WriteLine("state.MsgLength={0}, totalLength={1}", state.MsgLength, totalLength);
+                    if (len < totalLength)
+                        break;
+
+                    // Message completely received.
+                    ParseMessage(handler, state.Data);
+                    // Next
+                    state.MsgLength = 0;
+                    Console.WriteLine("Count={0}, totallength={1}", state.Data.Count, totalLength);
+                    //for (int i = 0; i < state.Data.Count; i++)
+                    //    Console.WriteLine("  Data[{0}]={1}", i, state.Data[i]);
+                    state.Data.RemoveRange(0, totalLength);
+                    Console.WriteLine("End of message, Data.Count={0}", state.Data.Count);
+
+                    // Next
+                    len -= totalLength;
                 }
 
-                int totalLength = HEADER_LEN_LENGTH + state.MsgLength;
-                //Console.WriteLine("state.MsgLength={0}, totalLength={1}", state.MsgLength, totalLength);
-                if (len < totalLength)
-                    break;
-
-                // Message completely received.
-                ParseMessage(handler, state.Data);
-                // Next
-                state.MsgLength = 0;
-                Console.WriteLine("Count={0}, totallength={1}", state.Data.Count, totalLength);
-                //for (int i = 0; i < state.Data.Count; i++)
-                //    Console.WriteLine("  Data[{0}]={1}", i, state.Data[i]);
-                state.Data.RemoveRange(0, totalLength);
-                Console.WriteLine("End of message, Data.Count={0}", state.Data.Count);
-
-                // Next
-                len -= totalLength;
+                // Receive the next data.
+                handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
             }
-
-            // Receive the next data.
-            handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
+            catch (Exception e)
+            {
+                HandleError(e.Message, handler);
+            }
         }
 
 
@@ -248,7 +258,8 @@ namespace DeZogPlugin
         protected static void ParseMessage(Socket socket, List<byte> data)
         {
             Console.WriteLine("ParseMessage");
-            WriteCmd(data);
+            if (LogEnabled)
+                WriteCmd(data.ToArray());
             Console.WriteLine("data.Count={0}", data.Count);
 
             DzrpData = new List<byte>();
@@ -322,8 +333,25 @@ namespace DeZogPlugin
 
 
                 default:
-                    Console.WriteLine("  Unexpected command {0}", command);
-                    break;
+                    throw new Exception("Unexpected command: " + command.ToString());
+            }
+
+        }
+
+
+        /**
+         * Prints an error text and disconnects.
+         */
+        protected static void HandleError(string text, Socket socket=null)
+        {
+
+            Console.WriteLine("Error: {0}", text);
+            if (socket != null)
+            {
+                Console.WriteLine("Disconnecting...");
+                socket.Shutdown(SocketShutdown.Both);
+                // Restart listener
+                StartListening();
             }
         }
 
@@ -337,8 +365,8 @@ namespace DeZogPlugin
             // Check if daa available
             int count = DzrpData.Count;
             if (count == 0)
-                return 0;  // TODO: should create an error
-                            // Get value
+                throw new Exception("GetDataByte: no data");
+            // Get value
             byte value = CSpectSocket.DzrpData[0];
             // Remove it from fifo
             CSpectSocket.DzrpData.RemoveAt(0);
@@ -357,8 +385,8 @@ namespace DeZogPlugin
             // Check if data available
             int count = DzrpData.Count;
             if (count < 2)
-                return 0; // TODO: should create an error
-                          // Get value
+                throw new Exception("GetDataWord: no data");
+            // Get value
             ushort value = (ushort)(CSpectSocket.DzrpData[0] + 256 * CSpectSocket.DzrpData[1]);
             // Remove it from fifo
             DzrpData.RemoveAt(0);
@@ -395,6 +423,8 @@ namespace DeZogPlugin
             if(byteData!=null)
                 byteData.CopyTo(wrapBuffer, HEADER_LEN_LENGTH + 1);
             receveivedSeqno = 0;    // Ready for next message.
+            if (LogEnabled)
+                WriteResp(wrapBuffer);
             // Begin sending the data to the remote device.
             Send(wrapBuffer);
         }
@@ -439,12 +469,12 @@ namespace DeZogPlugin
         /**
          * Creates a string from dat bytes.
          */
-        protected static string GetStringFromData(List<byte> data, int start = 0, int count = -1)
+        protected static string GetStringFromData(byte[] data, int start = 0, int count = -1)
         {
             if (count == -1)
-                count = data.Count;
-            if (start + count > data.Count)
-                count = data.Count - start;
+                count = data.Length;
+            if (start + count > data.Length)
+                count = data.Length - start;
             if (count <= 0)
                 return "";
 
@@ -461,11 +491,11 @@ namespace DeZogPlugin
 
 
         /**
-         * Converts uart command numbers to names.
+         * Writes a received command message to the console.
          */
-        protected static void WriteCmd(List<byte> data)
+        protected static void WriteCmd(byte[] data)
         {
-            int count = data.Count;
+            int count = data.Length;
             int index = 0;
             if (count >= 6)
             {
@@ -473,7 +503,7 @@ namespace DeZogPlugin
                 int seqno = data[4];
                 int cmd = data[5];
                 string cmdString = ((DZRP)cmd).ToString();
-                Console.WriteLine("Command {0}:", cmdString);
+                Console.WriteLine("<-- Command {0}:", cmdString);
                 Console.WriteLine("  Length: {0} ", length);
                 Console.WriteLine("  SeqNo:  {0}", seqno);
                 Console.WriteLine("  Cmd:    {0}", cmd);
@@ -484,6 +514,36 @@ namespace DeZogPlugin
             Console.Write("  Data:"+dataString);
             Console.WriteLine();
         }
+
+
+        /**
+         * Writes a sent response message to the console.
+         */
+        protected static void WriteResp(byte[] data)
+        {
+            Console.WriteLine("--> WriteResp");
+            int count = data.Length;
+            int index = 0;
+            if (count >= 5)
+            {
+                string length = "" + data[0] + " " + data[1] + " " + data[2] + " " + data[3];
+                int seqno = data[4];
+                string text;
+                if (seqno == 0)
+                    text = "Notification:";
+                else
+                    text = "Response:";
+                Console.WriteLine(text);
+                Console.WriteLine("  Length: {0} ", length);
+                Console.WriteLine("  SeqNo:  {0}", seqno);
+                index = 5;
+            }
+            // Rest of data
+            string dataString = GetStringFromData(data, index);
+            Console.Write("  Data:" + dataString);
+            Console.WriteLine();
+        }
+
     }
 
 }

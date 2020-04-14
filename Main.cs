@@ -31,12 +31,16 @@ namespace DeZogPlugin
             // Read settings file (port)
             Settings = Settings.Load();
 
+            CSpectSocket.LogEnabled = Settings.LogEnabled;
+
             //Server.Listen(Settings.Port);
             CSpectSocket.Port = Settings.Port;
             CSpectSocket.StartListening();
 
             CSpect = _CSpect;
 
+
+            CSpect.Debugger(Plugin.eDebugCommand.Enter); // TODO: REMOVE
 
             // No ports
             List<sIO> ports = new List<sIO>();
@@ -68,6 +72,7 @@ namespace DeZogPlugin
                 Console.WriteLine("  PC={0:X4}, SP={1:X4}, AF={2:X4}, BC={3:X4}, DE={4:X4}, HL={5:X4}, IX={6:X4}, IY={7:X4}", regs.PC, regs.SP, regs.AF, regs.BC, regs.DE, regs.HL, regs.IX, regs.IY);
             }
             */
+            Commands.Tick();
         }
         
 

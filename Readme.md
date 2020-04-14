@@ -16,9 +16,9 @@ I.e. this is an early development state. Don't expect it to work.
 The plugin can be compiled with Visual Studio (19). It has been built with VS on a Mac.
 Most probably this will work on Windows as well but has not been tested.
 
-Place the UartSocket.dll (and the UartSocket.dll.config) in the root directory of CSpect (i.e. at the same level as the CSpect.exe program).
+Place the DeZogpPlugin.dll (and the DeZogpPlugin.dll.config) in the root directory of CSpect (i.e. at the same level as the CSpect.exe program).
 Once you start CSpect it will automatically start the plugin.
-If everything works well you will see a message in the console: "UartSocket plugin started."
+If everything works well you will see a message in the console: "DeZogp plugin started."
 
 
 # Build
@@ -32,7 +32,7 @@ In the Cpect directory a link can be made (ln) to the dll, so it is not required
 
 ## Socket Configuration
 
-The UARTSocket plugin starts to listen for a socket connection on startup at port 11000.
+The DeZog plugin starts to listen for a socket connection on startup at port 11000.
 You can change the used port by providing a different port number in the DeZogPlugin.dll.config file.
 
 ## Socket Protocol

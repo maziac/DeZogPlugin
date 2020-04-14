@@ -14,6 +14,11 @@ namespace DeZogPlugin
          */
         public int Port { get; set; } = 11000;  // Default
 
+        /**
+         * If log is enabled.
+         */
+        public bool LogEnabled { get; set; } = false;  // Default
+
 
         /**
          * Constructor.
@@ -53,7 +58,7 @@ namespace DeZogPlugin
 
         /**
          * Returns the settings filename.
-         * I.e. UartSocket.dll.config
+         * I.e. DeZogpPlugin.dll.config
          */
         protected static string GetFileName()
         {
