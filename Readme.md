@@ -30,12 +30,16 @@ What's not working/not tested:
 The plugin can be compiled with Visual Studio (19). It has been built with VS on a Mac.
 Most probably this will work on Windows as well but has not been tested.
 
-Place the DeZogpPlugin.dll (and the DeZogpPlugin.dll.config) in the root directory of CSpect (i.e. at the same level as the CSpect.exe program).
+You can find precompiled DLLs [here](https://github.com/maziac/DeZogPlugin/releases).
+
+Place the DeZogPlugin.dll (and the DeZogPlugin.dll.config) in the root directory of CSpect (i.e. at the same level as the CSpect.exe program).
 Once you start CSpect it will automatically start the plugin.
 If everything works well you will see a message in the console: "DeZog plugin started."
 
 For the DeZog configuration see [DeZog](https://github.com/maziac/DeZog).
 Basically you need to create a launch.json with and set the port (if different from default).
+
+You can start CSpect without any (Z80) program. The program is being transferred by DeZog when the debug session is started.
 
 
 # Build
