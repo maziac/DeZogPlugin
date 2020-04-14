@@ -12,7 +12,7 @@ using System.Threading;
 namespace DeZogPlugin
 {
 
-    // The comand enums.    
+    // The command enums.    
     public enum DZRP {
         CMD_GET_CONFIG=1,
 	    CMD_GET_REGISTERS=2,
@@ -34,6 +34,13 @@ namespace DeZogPlugin
 
         CMD_READ_STATE = 0xE,
         CMD_WRITE_STATE = 0xF,
+    }
+
+
+    // The notifications
+    public enum DZRP_NTF
+    {
+        NTF_PAUSE = 1
     }
 
 
@@ -423,8 +430,6 @@ namespace DeZogPlugin
             if(byteData!=null)
                 byteData.CopyTo(wrapBuffer, HEADER_LEN_LENGTH + 1);
             receveivedSeqno = 0;    // Ready for next message.
-            if (LogEnabled)
-                WriteResp(wrapBuffer);
             // Begin sending the data to the remote device.
             Send(wrapBuffer);
         }
@@ -438,6 +443,9 @@ namespace DeZogPlugin
             if (CSpectSocket.socket == null)
                 return;
 
+            // Log
+            if (LogEnabled)
+                WriteResp(byteData);
             // Begin sending the data to the remote device.
             Socket handler = CSpectSocket.socket.workSocket;
             handler.BeginSend(byteData, 0, byteData.Length, 0,
@@ -503,6 +511,7 @@ namespace DeZogPlugin
                 int seqno = data[4];
                 int cmd = data[5];
                 string cmdString = ((DZRP)cmd).ToString();
+                Console.WriteLine();
                 Console.WriteLine("<-- Command {0}:", cmdString);
                 Console.WriteLine("  Length: {0} ", length);
                 Console.WriteLine("  SeqNo:  {0}", seqno);
@@ -521,7 +530,6 @@ namespace DeZogPlugin
          */
         protected static void WriteResp(byte[] data)
         {
-            Console.WriteLine("--> WriteResp");
             int count = data.Length;
             int index = 0;
             if (count >= 5)
@@ -533,7 +541,8 @@ namespace DeZogPlugin
                     text = "Notification:";
                 else
                     text = "Response:";
-                Console.WriteLine(text);
+                Console.WriteLine();
+                Console.WriteLine("--> "+text);
                 Console.WriteLine("  Length: {0} ", length);
                 Console.WriteLine("  SeqNo:  {0}", seqno);
                 index = 5;

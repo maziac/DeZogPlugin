@@ -19,13 +19,19 @@ using System.Threading;
  * A client may connect at anytime.
  * A connection is terminated only by the client.
  * If a connection has been terminated a new connection can be established.
+ *
+ * CSpect:
+ * Set/ClearBreakpoint: This increments/decrements a breakpoint counter.
+ * One has to check with GetBreakpoint == 0 if the breakpoint is not active.
+ * Normal breakpoints are "orange"m
+ * Physical breakpoints are "red" in the CSpect UI.
  */
 
 
 namespace DeZogPlugin
 {
     /**
-     * Handles the sokcet commands, responses and notifications.
+     * Handles the socket commands, responses and notifications.
      */
     public class Commands
     {
@@ -48,9 +54,9 @@ namespace DeZogPlugin
         // The data array for preparing data to send.
         protected static byte[] Data;
 
-        // Temporary breakpoint (IDs) for Continue. 0 = unused.
-        protected static ushort TmpBreakpoint1;
-        protected static ushort TmpBreakpoint2;
+        // Temporary breakpoint (addresses) for Continue. -1 = unused.
+        protected static int TmpBreakpoint1;
+        protected static int TmpBreakpoint2;
 
 
         // The breakpoint map to keep the IDs and addresses.
@@ -60,7 +66,7 @@ namespace DeZogPlugin
         protected static ushort LastBreakpointId;
 
         // Action queue.
-        protected static List<Action> ActionQueue = new List<Action>();
+        //protected static List<Action> ActionQueue = new List<Action>();
 
         // Stores the previous debugger state.
         protected static bool CpuRunning = false;
@@ -70,24 +76,25 @@ namespace DeZogPlugin
          */
         public static void Init()
         {
-            ActionQueue = new List<Action>();
+            // ActionQueue = new List<Action>();
             BreakpointMap = new Dictionary<ushort, ushort>();
             LastBreakpointId = 0;
-            TmpBreakpoint1 = 0;
-            TmpBreakpoint2 = 0;
+            TmpBreakpoint1 = -1;
+            TmpBreakpoint2 = -1;
             CpuRunning = false;
             StartCpu(false);
 
             // Clear all breakpoints etc.
             var cspect = Main.CSpect;
-            /*
             for (int addr = 0; addr < 0x10000; addr++)
             {
-                cspect.Debugger(Plugin.eDebugCommand.ClearBreakpoint, addr);
-                cspect.Debugger(Plugin.eDebugCommand.ClearReadBreakpoint, addr);
-                cspect.Debugger(Plugin.eDebugCommand.ClearWriteBreakpoint, addr);
+                while (cspect.Debugger(Plugin.eDebugCommand.GetBreakpoint, addr) != 0)
+                    cspect.Debugger(Plugin.eDebugCommand.ClearBreakpoint, addr);
+                while (cspect.Debugger(Plugin.eDebugCommand.GetReadBreakpoint, addr) != 0)
+                    cspect.Debugger(Plugin.eDebugCommand.ClearReadBreakpoint, addr);
+                while (cspect.Debugger(Plugin.eDebugCommand.GetBreakpoint, addr) != 0)
+                    cspect.Debugger(Plugin.eDebugCommand.GetWriteBreakpoint, addr);
             }
-            */
             // Disable CSpect debugger screen
             //cspect.Debugger(Plugin.eDebugCommand.SetRemote, 1);
             //  cspect.Debugger(Plugin.eDebugCommand.Run);  // TODO
@@ -137,19 +144,12 @@ namespace DeZogPlugin
             {
                 Console.WriteLine("RUN");
                 var csp = Main.CSpect;
-                for (int addr = 0x80F8; addr < 0x80F9; addr++)
-                {
-                    csp.Debugger(Plugin.eDebugCommand.SetBreakpoint, addr);
-                    csp.Debugger(Plugin.eDebugCommand.SetBreakpoint, addr);
-                    Console.WriteLine(csp.Debugger(Plugin.eDebugCommand.GetBreakpoint, addr));
-                    csp.Debugger(Plugin.eDebugCommand.ClearReadBreakpoint, addr);
-                    csp.Debugger(Plugin.eDebugCommand.ClearWriteBreakpoint, addr);
-                }
                 Main.CSpect.Debugger(Plugin.eDebugCommand.Run);
                 Console.WriteLine("RUNdone " );
             }
 
             // Check if something to send
+            /*
             int count = ActionQueue.Count;
             if (count > 0)
             {
@@ -160,6 +160,7 @@ namespace DeZogPlugin
                     ActionQueue.Clear();
                 }
             }
+            */
 
             // Check if debugger state changed
             var cspect = Main.CSpect;
@@ -171,10 +172,27 @@ namespace DeZogPlugin
                 CpuRunning = running;
                 if(CpuRunning==false)
                 {
-                    // Send break notification
-                    SendPauseNotification(BreakReason.MANUAL_BREAK, 0);
+                    DebuggerStopped();
                 }
             }
+        }
+
+
+        /**
+         * Called when the debugger stopped.
+         * E.g. because a breakpoint was hit.
+         */
+        protected static void DebuggerStopped()
+        {
+            // Disable temporary breakpoints
+            var cspect = Main.CSpect;
+            if (TmpBreakpoint1 >= 0)
+                cspect.Debugger(Plugin.eDebugCommand.ClearBreakpoint, TmpBreakpoint1);
+            if (TmpBreakpoint2 >= 0)
+                cspect.Debugger(Plugin.eDebugCommand.ClearBreakpoint, TmpBreakpoint2);
+
+            // Send break notification
+            SendPauseNotification(BreakReason.MANUAL_BREAK, 0);
         }
 
 
@@ -331,9 +349,8 @@ namespace DeZogPlugin
          */
         protected static ushort SetBreakpoint(ushort address)
         {
-            // Set in CSpect (if not already existing)
-            if (!BreakpointMap.ContainsValue(address))
-                Main.CSpect.Debugger(Plugin.eDebugCommand.SetBreakpoint, address);
+            // Set in CSpect (increment counter)
+            Main.CSpect.Debugger(Plugin.eDebugCommand.SetBreakpoint, address);
             // Add to array (ID = element position + 1)
             BreakpointMap.Add(++LastBreakpointId, address);
             return LastBreakpointId;
@@ -350,10 +367,8 @@ namespace DeZogPlugin
             if (BreakpointMap.TryGetValue(bpId, out address))
             {
                 BreakpointMap.Remove(bpId);
-
-                // Clear in CSpect (if no other breakpoint exists)
-                if (!BreakpointMap.ContainsValue(address))
-                    Main.CSpect.Debugger(Plugin.eDebugCommand.ClearBreakpoint, address);
+                // Clear in CSpect (decrement counter)
+                Main.CSpect.Debugger(Plugin.eDebugCommand.ClearBreakpoint, address);
             }
         }
 
@@ -371,11 +386,23 @@ namespace DeZogPlugin
             ushort bp2Address = CSpectSocket.GetDataWord();
 
             // Set temporary breakpoints
-            TmpBreakpoint1 = (bp1Enable) ? SetBreakpoint(bp1Address) : (ushort)0;
-            TmpBreakpoint2 = (bp2Enable) ? SetBreakpoint(bp2Address) : (ushort)0;
+            var cspect = Main.CSpect;
+            TmpBreakpoint1 = -1;
+            if (bp1Enable)
+            {
+                TmpBreakpoint1 = bp1Address;
+                cspect.Debugger(Plugin.eDebugCommand.SetBreakpoint, TmpBreakpoint1);
+            }
+            TmpBreakpoint2 = -1;
+            if (bp2Enable)
+            {
+                TmpBreakpoint2 = bp2Address;
+                cspect.Debugger(Plugin.eDebugCommand.SetBreakpoint, TmpBreakpoint2);
+            }
 
             // Run
-            Console.WriteLine("Continue: Run debugger.");
+            var regs = cspect.GetRegs();
+            Console.WriteLine("Continue: Run debugger. pc=0x{0:X4}/{0}, bp1=0x{1:X4}/{1}, bp2=0x{2:X4}/{2}", regs.PC, TmpBreakpoint1, TmpBreakpoint2);
             Main.CSpect.Debugger(Plugin.eDebugCommand.Run);
 
             /*
@@ -568,10 +595,30 @@ namespace DeZogPlugin
          */
         protected static void SendPauseNotification(BreakReason reason, int bpId)
         {
-
+            // Prepare data
+            int length = 7;
+            byte[] data =
+            {
+                // Length
+                (byte)(length & 0xFF),
+                (byte)((length >> 8) & 0xFF),
+                (byte)((length >> 16) & 0xFF),
+                (byte)(length >> 24),
+                // SeqNo = 0
+                0,
+                // PAUSE
+                (byte)DZRP_NTF.NTF_PAUSE,
+                // Reason
+                (byte)reason,
+                // Breakpoint ID
+                (byte)(bpId & 0xFF),
+                (byte)((bpId >> 8) & 0xFF),
+                // No string
+                0
+            };
 
             // Respond
-            CSpectSocket.SendResponse();
+            CSpectSocket.Send(data);
         }
     }
 }
