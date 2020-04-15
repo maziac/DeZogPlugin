@@ -561,7 +561,7 @@ namespace DeZogPlugin
 
 
         /**
-         * Returns the value of one TBblue register.
+         * Returns the value of one TBBlue register.
          */
         public static void GetTbblueReg()
         {
@@ -584,6 +584,7 @@ namespace DeZogPlugin
          */
         public static void GetSpritesPalette()
         {
+            // TODO
 
             // Respond
             CSpectSocket.SendResponse();
@@ -612,18 +613,30 @@ namespace DeZogPlugin
                 SetByte(sprite.H_N6_0_XX_YY_Y8);
             }
             // Respond
-            CSpectSocket.SendResponse();
+            CSpectSocket.SendResponse(Data);
         }
 
 
         /**
-         * Returns the some sprite patterns.
+         * Returns some sprite patterns.
          */
-        public static void GetSpritePatterns()
+        public static void ReadSpritePatternMem()
         {
+            // Start of memory
+            ushort address = CSpectSocket.GetDataWord();
+            // Get size
+            ushort size = CSpectSocket.GetDataWord();
+            Console.WriteLine("Pattern memory address={0}, size={1}", address, size);
 
             // Respond
-            CSpectSocket.SendResponse();
+            InitData(size);
+            var cspect = Main.CSpect;
+            for (; size > 0; size--)
+            {
+                byte value = cspect.PeekSprite(address++);
+                SetByte(value);
+            }
+            CSpectSocket.SendResponse(Data);
         }
 
 
@@ -632,6 +645,8 @@ namespace DeZogPlugin
          */
         public static void GetSpriteClipWindow()
         {
+            // TODO
+
             // Respond
             CSpectSocket.SendResponse(Data);
         }

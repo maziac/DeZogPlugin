@@ -39,7 +39,7 @@ namespace DeZogPlugin
 
         CMD_GET_SPRITES_PALETTE = 0x11,
         CMD_GET_SPRITES = 0x12,
-        CMD_GET_SPRITE_PATTERNS = 0x13,
+        CMD_READ_SPRITE_PATTERN_MEMORY = 0x13,
         CMD_GET_SPRITE_CLIP_WINDOW = 0x14,
     }
 
@@ -360,8 +360,8 @@ namespace DeZogPlugin
                     Commands.GetSprites();
                     break;
 
-                case DZRP.CMD_GET_SPRITE_PATTERNS:
-                    Commands.GetSpritePatterns();
+                case DZRP.CMD_READ_SPRITE_PATTERN_MEMORY:
+                    Commands.ReadSpritePatternMem();
                     break;
 
                 case DZRP.CMD_GET_SPRITE_CLIP_WINDOW:
