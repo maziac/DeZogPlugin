@@ -17,7 +17,7 @@ namespace DeZogPlugin
     {
 
         public static iCSpect CSpect;
-        public Settings Settings;
+        public static Settings Settings;
 
 
         /**
@@ -38,9 +38,6 @@ namespace DeZogPlugin
             CSpectSocket.StartListening();
 
             CSpect = _CSpect;
-
-
-            CSpect.Debugger(Plugin.eDebugCommand.Enter); // TODO: REMOVE
 
             // No ports
             List<sIO> ports = new List<sIO>();

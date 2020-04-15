@@ -253,6 +253,7 @@ namespace DeZogPlugin
             }
             catch (Exception e)
             {
+                Console.WriteLine("{0}", e);
                 HandleError(e.Message, handler);
             }
         }
@@ -377,7 +378,7 @@ namespace DeZogPlugin
             byte value = CSpectSocket.DzrpData[0];
             // Remove it from fifo
             CSpectSocket.DzrpData.RemoveAt(0);
-            Console.WriteLine("GetDataByte: Data.Count={0}", DzrpData.Count);
+            //Console.WriteLine("GetDataByte: Data.Count={0}", DzrpData.Count);
             // Return
             return value;
         }

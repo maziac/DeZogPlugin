@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0
+- Changed to new CSpect API 2.12.20
+- New config parameter "CSpectDebuggerVisible"
+
 ## 0.1.0
 Initial version.
 The plugin is working with CSpect v2.12.17.
@@ -12,7 +16,7 @@ What should work is:
 - Register display
 - Setting breakpoints
 
-What's not working/not tested.
-- Breakpoint conditions (not tested).
-- Watchpoints.
-- Sprite display.tting for registers while hovering
+What's not working/not tested:
+- Breakpoint conditions (not tested)
+- Watchpoints
+- Sprite display
