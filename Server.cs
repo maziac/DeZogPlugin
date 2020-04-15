@@ -34,6 +34,13 @@ namespace DeZogPlugin
 
         CMD_READ_STATE = 0xE,
         CMD_WRITE_STATE = 0xF,
+
+        CMD_GET_TBBLUE_REG = 0x10,
+
+        CMD_GET_SPRITES_PALETTE = 0x11,
+        CMD_GET_SPRITES = 0x12,
+        CMD_GET_SPRITE_PATTERNS = 0x13,
+        CMD_GET_SPRITE_CLIP_WINDOW = 0x14,
     }
 
 
@@ -339,6 +346,27 @@ namespace DeZogPlugin
                     Commands.WriteState();
                     break;
 
+
+                case DZRP.CMD_GET_TBBLUE_REG:
+                    Commands.GetTbblueReg();
+                    break;
+
+
+                case DZRP.CMD_GET_SPRITES_PALETTE:
+                    Commands.GetSpritesPalette();
+                    break;
+
+                case DZRP.CMD_GET_SPRITES:
+                    Commands.GetSprites();
+                    break;
+
+                case DZRP.CMD_GET_SPRITE_PATTERNS:
+                    Commands.GetSpritePatterns();
+                    break;
+
+                case DZRP.CMD_GET_SPRITE_CLIP_WINDOW:
+                    Commands.GetSpriteClipWindow();
+                    break;
 
                 default:
                     throw new Exception("Unexpected command: " + command.ToString());

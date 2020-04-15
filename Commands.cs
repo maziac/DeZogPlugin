@@ -548,7 +548,6 @@ namespace DeZogPlugin
             CSpectSocket.SendResponse();
         }
 
-
         /**
          * Writes the state.
          */
@@ -557,7 +556,84 @@ namespace DeZogPlugin
             // TODO: No CSpect interface yet.
 
             // Respond
+            //CSpectSocket.SendResponse();
+        }
+
+
+        /**
+         * Returns the value of one TBblue register.
+         */
+        public static void GetTbblueReg()
+        {
+            // Get register
+            byte reg = CSpectSocket.GetDataByte();
+            // Get register value
+            var cspect = Main.CSpect;
+            cspect.GetNextRegister(reg);
+            // Write register value
+            InitData(1);
+            byte value = cspect.GetNextRegister(reg);
+            SetByte(value);
+            // Respond
+            CSpectSocket.SendResponse(Data);
+        }
+
+
+        /**
+         * Returns the first or second sprites palette.
+         */
+        public static void GetSpritesPalette()
+        {
+
+            // Respond
             CSpectSocket.SendResponse();
+        }
+
+
+        /**
+         * Returns the attributes of some sprites.
+         */
+        public static void GetSprites()
+        {
+            // Get index
+            int index = CSpectSocket.GetDataByte();
+            // Get count
+            int count = CSpectSocket.GetDataByte();
+            // Get sprite data
+            InitData(5*count);
+            var cspect = Main.CSpect;
+            for (int i = 0; i < count; i++)
+            {
+                var sprite = cspect.GetSprite(index + i);
+                SetByte(sprite.x);
+                SetByte(sprite.y);
+                SetByte(sprite.paloff_mirror_flip_rotate_xmsb);
+                SetByte(sprite.visible_name);
+                SetByte(sprite.H_N6_0_XX_YY_Y8);
+            }
+            // Respond
+            CSpectSocket.SendResponse();
+        }
+
+
+        /**
+         * Returns the some sprite patterns.
+         */
+        public static void GetSpritePatterns()
+        {
+
+            // Respond
+            CSpectSocket.SendResponse();
+        }
+
+
+        /**
+         * Returns the sprite clipping window.
+         */
+        public static void GetSpriteClipWindow()
+        {
+            // Respond
+            CSpectSocket.SendResponse(Data);
         }
 
 
