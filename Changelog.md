@@ -1,8 +1,9 @@
 # Changelog
 
 ## 0.2.0
-- Changed to new CSpect API 2.12.20
-- New config parameter "CSpectDebuggerVisible"
+- Changed to new CSpect API 2.12.20.
+- New config parameter "CSpectDebuggerVisible".
+- Sprite access added.
 
 ## 0.1.0
 Initial version.

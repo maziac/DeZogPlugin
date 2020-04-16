@@ -620,15 +620,17 @@ namespace DeZogPlugin
         /**
          * Returns some sprite patterns.
          */
-        public static void ReadSpritePatternMem()
+        public static void GetSpritePatterns()
         {
             // Start of memory
-            ushort address = CSpectSocket.GetDataWord();
+            ushort index = CSpectSocket.GetDataByte();
             // Get size
-            ushort size = CSpectSocket.GetDataWord();
-            Console.WriteLine("Pattern memory address={0}, size={1}", address, size);
+            ushort count = CSpectSocket.GetDataByte();
+            Console.WriteLine("Sprite pattern index={0}, count={1}", index, count);
 
             // Respond
+            int address = index * 256;
+            int size = count * 256;
             InitData(size);
             var cspect = Main.CSpect;
             for (; size > 0; size--)
@@ -643,12 +645,25 @@ namespace DeZogPlugin
         /**
          * Returns the sprite clipping window.
          */
-        public static void GetSpriteClipWindow()
+        public static void GetSpritesClipWindow()
         {
-            // TODO
-
+            // Get index (for restoration)
+            var cspect = Main.CSpect;
+            int prevIndex = cspect.GetNextRegister(0x1C);
+            prevIndex = (prevIndex >> 2) & 0x3;
+            // Get clip window
+            cspect.SetNextRegister(0x1C, 0x02);
+            byte[] clip = new byte[4];
+            clip[0] = cspect.GetNextRegister(0x19); // xl
+            clip[1] = cspect.GetNextRegister(0x19); // xr
+            clip[2] = cspect.GetNextRegister(0x19); // yt
+            clip[3] = cspect.GetNextRegister(0x19); // yb
+            // Restore
+            cspect.SetNextRegister(0x1C, 0x02); // reset
+            for(int i=0; i<prevIndex;i++)
+                cspect.SetNextRegister(0x19, clip[i]);   // Increse index
             // Respond
-            CSpectSocket.SendResponse(Data);
+            CSpectSocket.SendResponse(clip);
         }
 
 
