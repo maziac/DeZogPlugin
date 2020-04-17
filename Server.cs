@@ -523,8 +523,8 @@ namespace DeZogPlugin
 
             string result = "";
             int printCount = count;
-            if (printCount > 20)
-                printCount = 20;
+            if (printCount > 300)
+                printCount = 300;
             for (int i = 0; i < printCount; i++)
                 result += " " + data[i + start];
             if (printCount != count)

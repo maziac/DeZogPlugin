@@ -591,10 +591,45 @@ namespace DeZogPlugin
          */
         public static void GetSpritesPalette()
         {
-            // TODO
+            // Which palette
+            int paletteIndex = CSpectSocket.GetDataByte() & 0x01;;
+
+            // Prepare data
+            InitData(2 * 256);
+
+            // Store current values
+            var cspect = Main.CSpect;
+            byte eUlaCtrlReg = cspect.GetNextRegister(0x43);
+            byte indexReg = cspect.GetNextRegister(0x40);
+            // Bit 7: 0=first (8bit color), 1=second (9th bit color)
+            byte machineReg = cspect.GetNextRegister(0x03);
+            // Select sprites
+            byte selSprites = (byte)((eUlaCtrlReg & 0x0F) | 0b1010_0000 | (paletteIndex << 6));
+            cspect.SetNextRegister(0x43, selSprites); // Resets also 0x44
+            // Set index to 0
+            cspect.SetNextRegister(0x40, 0);
+            // Read palette
+            for (int i = 0; i < 256; i++)
+            {
+                byte colorMain = cspect.GetNextRegister(0x41);
+                SetByte(colorMain);
+                byte color9th = cspect.GetNextRegister(0x44);
+                SetByte(color9th);
+            }
+            // Restore values
+            cspect.SetNextRegister(0x40, indexReg);
+            cspect.SetNextRegister(0x43, eUlaCtrlReg);
+            if ((machineReg & 0x80) != 0)
+            {
+                // Bit 7 set, increase 0x44 index.
+                // Get 8bit color
+                byte col = cspect.GetNextRegister(0x41);
+                // Write it to increase the index
+                cspect.SetNextRegister(0x44, col);
+            }
 
             // Respond
-            CSpectSocket.SendResponse();
+            CSpectSocket.SendResponse(Data);
         }
 
 
@@ -629,18 +664,6 @@ namespace DeZogPlugin
          */
         public static void GetSpritePatterns()
         {
-            {
-                Console.WriteLine("**************************");
-                int addr = 0;
-                for (int i = 0; i < 16384; i++)
-                {
-                    var value=Main.CSpect.PeekSprite(addr++);
-                    if (value > 0)
-                        Console.WriteLine("addr={0}, value={1}", addr, value);
-                }
-                Console.WriteLine("^^^^^^^^^^^^^^^^^^^^^^^^^^");
-            }
-
             // Start of memory
             ushort index = CSpectSocket.GetDataByte();
             // Get size
@@ -669,7 +692,7 @@ namespace DeZogPlugin
             // Get index (for restoration)
             var cspect = Main.CSpect;
             int prevIndex = cspect.GetNextRegister(0x1C);
-            prevIndex = (prevIndex >> 2) & 0x3;
+            prevIndex = (prevIndex >> 2) & 0x03;
             // Get clip window
             cspect.SetNextRegister(0x1C, 0x02);
             byte[] clip = new byte[4];
@@ -680,7 +703,7 @@ namespace DeZogPlugin
             // Restore
             cspect.SetNextRegister(0x1C, 0x02); // reset
             for(int i=0; i<prevIndex;i++)
-                cspect.SetNextRegister(0x19, clip[i]);   // Increse index
+                cspect.SetNextRegister(0x19, clip[i]);   // Increase index
             // Respond
             CSpectSocket.SendResponse(clip);
         }
