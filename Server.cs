@@ -385,7 +385,12 @@ namespace DeZogPlugin
             if (socket != null)
             {
                 Console.WriteLine("Disconnecting...");
-                socket.Shutdown(SocketShutdown.Both);
+                try
+                {
+                    socket.Shutdown(SocketShutdown.Both);
+                    socket.Close();
+                }
+                catch (Exception) {};   // Catch exception because the socket may already be disconnected.
                 // Restart listener
                 StartListening();
             }
