@@ -54,6 +54,7 @@
     <None Include="Readme.md" />
     <None Include="License.md" />
     <None Include="DeZogPlugin.dll.config" />
+    <None Include="Changelog.md" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

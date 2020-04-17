@@ -450,7 +450,8 @@ namespace DeZogPlugin
         {
             // Length
             int length = (byteData != null) ? byteData.Length : 0;
-            var wrapBuffer = new byte[length + HEADER_LEN_LENGTH + 1];
+            length += 1;    // For seq no
+            var wrapBuffer = new byte[length + HEADER_LEN_LENGTH];
             wrapBuffer[0] = (byte)(length & 0xFF);
             wrapBuffer[1] = (byte)((length >> 8) & 0xFF);
             wrapBuffer[2] = (byte)((length >> 16) & 0xFF);

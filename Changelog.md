@@ -4,6 +4,8 @@
 - Changed to new CSpect API 2.12.20.
 - New config parameter "CSpectDebuggerVisible".
 - Sprite access added.
+- Corrected sending. Length was off by 1.
+- Removed one byte from pause notification.
 
 ## 0.1.0
 Initial version.

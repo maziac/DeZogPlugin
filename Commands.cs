@@ -20,11 +20,6 @@ using System.Threading;
  * A connection is terminated only by the client.
  * If a connection has been terminated a new connection can be established.
  *
- * CSpect:
- * Set/ClearBreakpoint: This increments/decrements a breakpoint counter.
- * One has to check with GetBreakpoint == 0 if the breakpoint is not active.
- * Normal breakpoints are "orange"m
- * Physical breakpoints are "red" in the CSpect UI.
  */
 
 
@@ -98,26 +93,35 @@ namespace DeZogPlugin
 
 
         /**
-         * Start/stop debugger.
-         */
-        protected static void StartCpu(bool start)
-        {
-            CpuRunning = start;
-            var cspect = Main.CSpect;
-            if (start)
-                cspect.Debugger(Plugin.eDebugCommand.Run);
-            else
-                cspect.Debugger(Plugin.eDebugCommand.Enter);
-        }
-
-
-        /**
          * Initializes the data buffer.
          */
         protected static void InitData(int size)
         {
             Index = 0;
             Data = new byte[size];
+        }
+
+
+        /**
+         * Start/stop debugger.
+         */
+        protected static void StartCpu(bool start)
+        {
+            // Is required. Otherwise a stop could be missed because the tick is called only
+            // every 20ms. If start/stop happens within this timeframe it would not be recognized.
+            CpuRunning = start;
+            // Start/stop
+            var cspect = Main.CSpect;
+            if (start)
+            {
+                // Run
+                cspect.Debugger(Plugin.eDebugCommand.Run);
+            }
+            else
+            {
+                // Stop
+                cspect.Debugger(Plugin.eDebugCommand.Enter);
+            }
         }
 
 
@@ -134,11 +138,11 @@ namespace DeZogPlugin
             var cspect = Main.CSpect;
             var debugState = cspect.Debugger(Plugin.eDebugCommand.GetState);
             bool running = (debugState == 0);
-            if(CpuRunning != running)
+            if (CpuRunning != running)
             {
                 // State changed
                 CpuRunning = running;
-                if(CpuRunning==false)
+                if (running == false)
                 {
                     DebuggerStopped();
                 }
@@ -152,6 +156,9 @@ namespace DeZogPlugin
          */
         protected static void DebuggerStopped()
         {
+            ////if(Main.Settings.LogEnabled)
+          ////      Console.WriteLine("Debugger stopped");
+
             // Disable temporary breakpoints
             var cspect = Main.CSpect;
             if (TmpBreakpoint1 >= 0)
@@ -392,7 +399,7 @@ namespace DeZogPlugin
             // Run
             var regs = cspect.GetRegs();
             Console.WriteLine("Continue: Run debugger. pc=0x{0:X4}/{0}, bp1=0x{1:X4}/{1}, bp2=0x{2:X4}/{2}", regs.PC, TmpBreakpoint1, TmpBreakpoint2);
-            Main.CSpect.Debugger(Plugin.eDebugCommand.Run);
+            StartCpu(true);
 
             // Respond
             CSpectSocket.SendResponse();
@@ -622,6 +629,18 @@ namespace DeZogPlugin
          */
         public static void GetSpritePatterns()
         {
+            {
+                Console.WriteLine("**************************");
+                int addr = 0;
+                for (int i = 0; i < 16384; i++)
+                {
+                    var value=Main.CSpect.PeekSprite(addr++);
+                    if (value > 0)
+                        Console.WriteLine("addr={0}, value={1}", addr, value);
+                }
+                Console.WriteLine("^^^^^^^^^^^^^^^^^^^^^^^^^^");
+            }
+
             // Start of memory
             ushort index = CSpectSocket.GetDataByte();
             // Get size
@@ -673,7 +692,7 @@ namespace DeZogPlugin
         protected static void SendPauseNotification(BreakReason reason, int bpId)
         {
             // Prepare data
-            int length = 7;
+            int length = 6;
             byte[] data =
             {
                 // Length
