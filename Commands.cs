@@ -134,6 +134,12 @@ namespace DeZogPlugin
             if (BreakpointMap == null)
                 return;
 
+
+            // TODO: REMOVE
+            var spr = Main.CSpect.GetSprite(11);
+            Console.WriteLine("sprite={0} {1}", spr.x, spr.y);
+
+
             // Check if debugger state changed
             var cspect = Main.CSpect;
             var debugState = cspect.Debugger(Plugin.eDebugCommand.GetState);
@@ -178,6 +184,12 @@ namespace DeZogPlugin
             var pc = regs.PC;
             if (BreakpointMap.ContainsValue(pc))
                 reason = BreakReason.BREAKPOINT_HIT;
+            else
+            {
+                // Check temporary breakpoints
+                if(pc == TmpBreakpoint1 || pc==TmpBreakpoint2)
+                    reason = BreakReason.NO_REASON;
+            }
 
             // Note: Watchpoint reasons cannot be recognized.
             
@@ -601,31 +613,31 @@ namespace DeZogPlugin
             var cspect = Main.CSpect;
             byte eUlaCtrlReg = cspect.GetNextRegister(0x43);
             byte indexReg = cspect.GetNextRegister(0x40);
+            byte colorReg = cspect.GetNextRegister(0x41);
             // Bit 7: 0=first (8bit color), 1=second (9th bit color)
             byte machineReg = cspect.GetNextRegister(0x03);
             // Select sprites
-            byte selSprites = (byte)((eUlaCtrlReg & 0x0F) | 0b1010_0000 | (paletteIndex << 6));
+            byte selSprites = (byte)((eUlaCtrlReg & 0x0F) | 0b0010_0000 | (paletteIndex << 6));
             cspect.SetNextRegister(0x43, selSprites); // Resets also 0x44
-            // Set index to 0
-            cspect.SetNextRegister(0x40, 0);
-            // Read palette
+             // Read palette
             for (int i = 0; i < 256; i++)
             {
+                // Set index
+                cspect.SetNextRegister(0x40, (byte)i);
+                // Read color
                 byte colorMain = cspect.GetNextRegister(0x41);
                 SetByte(colorMain);
                 byte color9th = cspect.GetNextRegister(0x44);
                 SetByte(color9th);
             }
             // Restore values
-            cspect.SetNextRegister(0x40, indexReg);
             cspect.SetNextRegister(0x43, eUlaCtrlReg);
+            cspect.SetNextRegister(0x40, indexReg);
             if ((machineReg & 0x80) != 0)
             {
                 // Bit 7 set, increase 0x44 index.
-                // Get 8bit color
-                byte col = cspect.GetNextRegister(0x41);
                 // Write it to increase the index
-                cspect.SetNextRegister(0x44, col);
+                cspect.SetNextRegister(0x44, colorReg);
             }
 
             // Respond
@@ -645,6 +657,11 @@ namespace DeZogPlugin
             // Get sprite data
             InitData(5*count);
             var cspect = Main.CSpect;
+
+            // TODO: REMOVE
+            var spr=cspect.GetSprite(1);
+            Console.WriteLine("sprite={0} {1}", spr.x, spr.y);
+
             for (int i = 0; i < count; i++)
             {
                 var sprite = cspect.GetSprite(index + i);
