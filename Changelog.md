@@ -3,6 +3,7 @@
 ## 0.3.0
 - GetSpritesPalette functionality added.
 - Corrected break reason.
+- Handling of breakpoint ID corrected.
 
 ## 0.2.0
 - Changed to new CSpect API 2.12.20.

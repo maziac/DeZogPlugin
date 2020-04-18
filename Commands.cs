@@ -136,9 +136,12 @@ namespace DeZogPlugin
 
 
             // TODO: REMOVE
-            //var spr = Main.CSpect.GetSprite(11);
-            //Console.WriteLine("sprite={0} {1}", spr.x, spr.y);
-
+            for (int i = 0; i < 64; i++)
+            {
+                var spr = Main.CSpect.GetSprite(i);
+                if (spr.x != 0)
+                    Console.WriteLine("sprite[{0}]={1} {2}", i, spr.x, spr.y);
+            }
 
             // Check if debugger state changed
             var cspect = Main.CSpect;
@@ -180,21 +183,35 @@ namespace DeZogPlugin
 
             // Guess break reason
             BreakReason reason = BreakReason.MANUAL_BREAK;
+            int bpId = 0;
             var regs = cspect.GetRegs();
             var pc = regs.PC;
             if (BreakpointMap.ContainsValue(pc))
+            {
+                // Breakpoint hit
                 reason = BreakReason.BREAKPOINT_HIT;
+                // Get ID
+                foreach (var pair in BreakpointMap)
+                {
+                    if(pair.Value == pc)
+                    {
+                        bpId = pair.Key;
+                        Console.WriteLine("Found BpID={0} for PC={1}", bpId, pc);
+                        break;
+                    }
+                }
+            }
             else
             {
                 // Check temporary breakpoints
-                if(pc == TmpBreakpoint1 || pc==TmpBreakpoint2)
+                if (pc == TmpBreakpoint1 || pc == TmpBreakpoint2)
                     reason = BreakReason.NO_REASON;
             }
 
             // Note: Watchpoint reasons cannot be recognized.
             
             // Send break notification
-            SendPauseNotification(reason, 0);
+            SendPauseNotification(reason, bpId);
 
             // "Undefine" temporary breakpoints
             TmpBreakpoint1 = -1;
