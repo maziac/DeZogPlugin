@@ -136,8 +136,8 @@ namespace DeZogPlugin
 
 
             // TODO: REMOVE
-            var spr = Main.CSpect.GetSprite(11);
-            Console.WriteLine("sprite={0} {1}", spr.x, spr.y);
+            //var spr = Main.CSpect.GetSprite(11);
+            //Console.WriteLine("sprite={0} {1}", spr.x, spr.y);
 
 
             // Check if debugger state changed
