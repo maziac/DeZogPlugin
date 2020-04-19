@@ -30,6 +30,8 @@ namespace DeZogPlugin
      */
     public class Commands
     {
+        protected static byte[] DZRP_VERSION = { 0, 1, 0 };
+
         /**
          * The break reason.
          */
@@ -136,11 +138,11 @@ namespace DeZogPlugin
 
 
             // TODO: REMOVE
-            for (int i = 0; i < 64; i++)
+            for (int i = 0; i < 128; i++)
             {
                 var spr = Main.CSpect.GetSprite(i);
-                if (spr.x != 0)
-                    Console.WriteLine("sprite[{0}]={1} {2}", i, spr.x, spr.y);
+                if ((spr.visible_name&0x80) != 0)
+                    Console.WriteLine("sprite[{0}]: x={1}, y={2}, a2={3:X2}, a3={4:X2}, a4={5:X2}", i, spr.x, spr.y, spr.paloff_mirror_flip_rotate_xmsb, spr.visible_name, spr.H_N6_0_XX_YY_Y8);
             }
 
             // Check if debugger state changed
@@ -241,12 +243,12 @@ namespace DeZogPlugin
         /**
          * Returns the configuration.
          */
-        public static void GetConfig()
+        public static void CmdInit()
         {
             // Return configuration
-            CSpectSocket.SendResponse(new byte[] { 0x01 });
-
+            CSpectSocket.SendResponse(DZRP_VERSION);
         }
+
 
         /**
          * Returns the registers.
@@ -740,6 +742,22 @@ namespace DeZogPlugin
                 cspect.SetNextRegister(0x19, clip[i]);   // Increase index
             // Respond
             CSpectSocket.SendResponse(clip);
+        }
+
+
+
+        /**
+         * Sets the border color.
+         */
+        public static void SetBorder()
+        {
+            // Get border color
+            byte color = CSpectSocket.GetDataByte();
+            //Console.WriteLine("Bordercolor={0}", color);
+            // Set border
+            Main.CSpect.OutPort(0xFE, color);
+            // Respond
+            CSpectSocket.SendResponse();
         }
 
 

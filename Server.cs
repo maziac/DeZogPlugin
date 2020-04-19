@@ -14,7 +14,7 @@ namespace DeZogPlugin
 
     // The command enums.    
     public enum DZRP {
-        CMD_GET_CONFIG=1,
+        CMD_INIT=1,
 	    CMD_GET_REGISTERS=2,
 	    CMD_SET_REGISTER=3,
 	    CMD_WRITE_BANK=4,
@@ -41,6 +41,8 @@ namespace DeZogPlugin
         CMD_GET_SPRITES = 0x12,
         CMD_GET_SPRITE_PATTERNS = 0x13,
         CMD_GET_SPRITE_CLIP_WINDOW = 0x14,
+
+        CMD_SET_BORDER = 0x15,
     }
 
 
@@ -286,8 +288,8 @@ namespace DeZogPlugin
             DZRP command = (DZRP)data[HEADER_LEN_LENGTH + 1];
             switch (command)
             {
-                case DZRP.CMD_GET_CONFIG:
-                    Commands.GetConfig();
+                case DZRP.CMD_INIT:
+                    Commands.CmdInit();
                     break;
 
                 case DZRP.CMD_GET_REGISTERS:
@@ -366,6 +368,10 @@ namespace DeZogPlugin
 
                 case DZRP.CMD_GET_SPRITE_CLIP_WINDOW:
                     Commands.GetSpritesClipWindow();
+                    break;
+
+                case DZRP.CMD_SET_BORDER:
+                    Commands.SetBorder();
                     break;
 
                 default:

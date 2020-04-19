@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0
+- CMD_GET_CONFIG changed to CMD_INIT
+- CMD_SET_BORDER added.
+
 ## 0.3.0
 - GetSpritesPalette functionality added.
 - Corrected break reason.
