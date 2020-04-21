@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.5.0
+- Using CSpect 2.12.22.
+
 ## 0.4.0
 - CMD_GET_CONFIG changed to CMD_INIT
 - CMD_SET_BORDER added.

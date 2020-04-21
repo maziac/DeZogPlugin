@@ -357,10 +357,10 @@ namespace DeZogPlugin
             var cspect = Main.CSpect;
             // TODO: ENABLE
             Console.WriteLine("WriteBank: bank={0}", bankNumber);
-            for (int i=0x2000; i>0; i--)
+            for (int i = 0x2000; i > 0; i--)
             {
                 byte value = CSpectSocket.GetDataByte();
-                cspect.PokePhysical(physAddress++, value);
+                cspect.PokePhysical(physAddress++, new byte[] {value});
             }
             
             // Respond
@@ -522,11 +522,9 @@ namespace DeZogPlugin
             // Respond
             InitData(size);
             var cspect = Main.CSpect;
-            for (; size > 0; size--)
-            {
-                byte value = cspect.Peek(address++);
+            byte[] values = cspect.Peek(address, size);
+            foreach(byte value in values)
                 SetByte(value);
-            }
             CSpectSocket.SendResponse(Data);
         }
 
@@ -546,12 +544,9 @@ namespace DeZogPlugin
 
             // Write memory
             var cspect = Main.CSpect;
-            for (int i=0; i<size; i++)
-            {
-                byte value = data[i];
-                cspect.Poke(address++, value);
-            }
-
+            byte[] values = data.ToArray();
+            cspect.Poke(address, values);
+            
             // Respond
             CSpectSocket.SendResponse();
         }
@@ -711,11 +706,9 @@ namespace DeZogPlugin
             int size = count * 256;
             InitData(size);
             var cspect = Main.CSpect;
-            for (; size > 0; size--)
-            {
-                byte value = cspect.PeekSprite(address++);
+            byte[] values = cspect.PeekSprite(address, size);
+            foreach(byte value in values)
                 SetByte(value);
-            }
             CSpectSocket.SendResponse(Data);
         }
 
