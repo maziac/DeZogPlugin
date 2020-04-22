@@ -40,6 +40,7 @@
     <Reference Include="System.Xml" />
     <Reference Include="Plugin">
       <HintPath>..\CSpect2_12_22\Plugin.dll</HintPath>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -48,6 +49,7 @@
     <Compile Include="Settings.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="Commands.cs" />
+    <Compile Include="Log.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Readme.md" />

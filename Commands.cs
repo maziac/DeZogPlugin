@@ -42,6 +42,7 @@ namespace DeZogPlugin
             BREAKPOINT_HIT = 2,
             WATCHPOINT_READ = 3,
             WATCHPOINT_WRITE = 4,
+            OTHER = 255,
         }
 
 
@@ -68,6 +69,9 @@ namespace DeZogPlugin
         // Stores the previous debugger state.
         protected static bool CpuRunning = false;
 
+        // Stores if a PAUSE command has been sent.
+        protected static bool ManualBreak = false;
+
         /**
          * General initalization function.
          */
@@ -75,7 +79,8 @@ namespace DeZogPlugin
         {
             var cspect = Main.CSpect;
             bool dbgVisible = Main.Settings.CSpectDebuggerVisible;
-            Console.WriteLine("CSpectDebuggerVisible={0}", dbgVisible);
+            if (Log.Enabled)
+                Log.WriteLine("CSpectDebuggerVisible={0}", dbgVisible);
             cspect.Debugger(Plugin.eDebugCommand.SetRemote, (dbgVisible) ? 0 : 1);
             BreakpointMap = new Dictionary<ushort, ushort>();
             LastBreakpointId = 0;
@@ -89,7 +94,7 @@ namespace DeZogPlugin
             {
                 cspect.Debugger(Plugin.eDebugCommand.ClearBreakpoint, addr);
                 cspect.Debugger(Plugin.eDebugCommand.ClearReadBreakpoint, addr);
-                cspect.Debugger(Plugin.eDebugCommand.GetWriteBreakpoint, addr);
+                cspect.Debugger(Plugin.eDebugCommand.ClearWriteBreakpoint, addr);
             }
         }
 
@@ -138,12 +143,17 @@ namespace DeZogPlugin
 
 
             // TODO: REMOVE
-            for (int i = 0; i < 128; i++)
+            /*
+            if(Log.Enabled)
             {
-                var spr = Main.CSpect.GetSprite(i);
-                if ((spr.visible_name&0x80) != 0)
-                    Console.WriteLine("sprite[{0}]: x={1}, y={2}, a2={3:X2}, a3={4:X2}, a4={5:X2}", i, spr.x, spr.y, spr.paloff_mirror_flip_rotate_xmsb, spr.visible_name, spr.H_N6_0_XX_YY_Y8);
+            for (int i = 0; i < 128; i++)
+                {
+                    var spr = Main.CSpect.GetSprite(i);
+                    if ((spr.visible_name&0x80) != 0)
+                        Log.WriteLine("sprite[{0}]: x={1}, y={2}, a2={3:X2}, a3={4:X2}, a4={5:X2}", i, spr.x, spr.y, spr.paloff_mirror_flip_rotate_xmsb, spr.visible_name, spr.H_N6_0_XX_YY_Y8);
+                }
             }
+            */
 
             // Check if debugger state changed
             var cspect = Main.CSpect;
@@ -167,8 +177,8 @@ namespace DeZogPlugin
          */
         protected static void DebuggerStopped()
         {
-            ////if(Main.Settings.LogEnabled)
-          ////      Console.WriteLine("Debugger stopped");
+            if (Log.Enabled)
+                Log.WriteLine("Debugger stopped");
 
             // Disable temporary breakpoints
             var cspect = Main.CSpect;
@@ -185,6 +195,7 @@ namespace DeZogPlugin
 
             // Guess break reason
             BreakReason reason = BreakReason.MANUAL_BREAK;
+            string reasonString = "";
             int bpId = 0;
             var regs = cspect.GetRegs();
             var pc = regs.PC;
@@ -198,7 +209,8 @@ namespace DeZogPlugin
                     if(pair.Value == pc)
                     {
                         bpId = pair.Key;
-                        Console.WriteLine("Found BpID={0} for PC={1}", bpId, pc);
+                        if (Log.Enabled)
+                            Log.WriteLine("Found BpID={0} for PC={1}", bpId, pc);
                         break;
                     }
                 }
@@ -210,14 +222,36 @@ namespace DeZogPlugin
                     reason = BreakReason.NO_REASON;
             }
 
-            // Note: Watchpoint reasons cannot be recognized.
-            
+            // Note: Watchpoint reasons cannot be safely recognized.
+            // Use a few heuristics to determine if a watchpoint is hit.
+            if (reason == BreakReason.MANUAL_BREAK)
+            {
+                if (!ManualBreak)
+                {
+                    // No pause command has been sent.
+                    // Check if there is any watchpoint set. If yes
+                    // assume it was a watchpoint.
+                    // Note: It could also be a user stopping the CSpect by F1.
+                    for (int i = 0; i < 0x10000; i++)
+                    {
+                        if (cspect.Debugger(Plugin.eDebugCommand.GetReadBreakpoint, i) != 0
+                            || cspect.Debugger(Plugin.eDebugCommand.GetWriteBreakpoint, i) != 0)
+                        {
+                            reason = BreakReason.OTHER;
+                            reasonString = "Watchpoint hit or manual break.";
+                            break;
+                        }
+                    }
+                }
+            }
             // Send break notification
-            SendPauseNotification(reason, bpId);
+            SendPauseNotification(reason, bpId, reasonString);
 
             // "Undefine" temporary breakpoints
             TmpBreakpoint1 = -1;
             TmpBreakpoint2 = -1;
+            // Reset Pause
+            ManualBreak = false;
         }
 
 
@@ -355,8 +389,8 @@ namespace DeZogPlugin
             Int32 physAddress = bankNumber * 0x2000;
             // Write memory
             var cspect = Main.CSpect;
-            // TODO: ENABLE
-            Console.WriteLine("WriteBank: bank={0}", bankNumber);
+            if (Log.Enabled)
+                Log.WriteLine("WriteBank: bank={0}", bankNumber);
             for (int i = 0x2000; i > 0; i--)
             {
                 byte value = CSpectSocket.GetDataByte();
@@ -427,9 +461,15 @@ namespace DeZogPlugin
                 cspect.Debugger(Plugin.eDebugCommand.SetBreakpoint, TmpBreakpoint2);
             }
 
+            // Log
+            if (Log.Enabled)
+            {
+                var regs = cspect.GetRegs();
+                Log.WriteLine("Continue: Run debugger. pc=0x{0:X4}/{0}, bp1=0x{1:X4}/{1}, bp2=0x{2:X4}/{2}", regs.PC, TmpBreakpoint1, TmpBreakpoint2);
+            }
+
             // Run
-            var regs = cspect.GetRegs();
-            Console.WriteLine("Continue: Run debugger. pc=0x{0:X4}/{0}, bp1=0x{1:X4}/{1}, bp2=0x{2:X4}/{2}", regs.PC, TmpBreakpoint1, TmpBreakpoint2);
+            ManualBreak = false;
             StartCpu(true);
 
             // Respond
@@ -443,11 +483,12 @@ namespace DeZogPlugin
         public static void Pause()
         {
             // Pause
-            Console.WriteLine("Pause: Stop debugger.");
+            if (Log.Enabled)
+                Log.WriteLine("Pause: Stop debugger.");
+            ManualBreak = true;
             Main.CSpect.Debugger(Plugin.eDebugCommand.Enter);
             // Respond
             CSpectSocket.SendResponse();
-
         }
 
 
@@ -486,21 +527,58 @@ namespace DeZogPlugin
 
 
         /**
-         * Adds a watchpoint.
+         * Adds a watchpoint area.
          */
         public static void AddWatchpoint()
         {
-            // TODO: Need to check if it is correct that watchpoints have no ID in DZRP.
+            // Get data
+            ushort start = CSpectSocket.GetDataWord();
+            ushort size = CSpectSocket.GetDataWord();
+            ushort end = (ushort)(start + size);
+            byte access = CSpectSocket.GetDataByte();
+            if (Log.Enabled)
+                Log.WriteLine("AddWatchpoint: address={0:X4}, size={1}", start, size);
+            // condition is not used
+            var cspect = Main.CSpect;
+            // Read
+            if ((access & 0x01) != 0)
+            {
+                for (ushort i = start; i != end; i++)
+                {
+                    cspect.Debugger(Plugin.eDebugCommand.SetReadBreakpoint, i);
+                    //Console.WriteLine("Read Watchpoint {0}", i);
+                }
+            }
+            // Write
+            if ((access & 0x02) != 0)
+            {
+                for (ushort i = start; i != end; i++)
+                {
+                    cspect.Debugger(Plugin.eDebugCommand.SetWriteBreakpoint, i);
+                    //Console.WriteLine("Write Watchpoint {0}", i);
+                }
+            }
             // Respond
-            CSpectSocket.SendResponse(new byte[] { 1 });
+            CSpectSocket.SendResponse();
         }
 
 
         /**
-         * Removes a watchpoint.
+         * Removes a watchpoint area.
          */
         public static void RemoveWatchpoint()
         {
+            // Get data
+            ushort start = CSpectSocket.GetDataWord();
+            ushort size = CSpectSocket.GetDataWord();
+            ushort end = (ushort)(start + size);
+            var cspect = Main.CSpect;
+            // Remove both read and write
+            for (ushort i = start; i != end; i++)
+            {
+                cspect.Debugger(Plugin.eDebugCommand.ClearReadBreakpoint, i);
+                cspect.Debugger(Plugin.eDebugCommand.ClearWriteBreakpoint, i);
+            }
             // Respond
             CSpectSocket.SendResponse();
         }
@@ -517,7 +595,8 @@ namespace DeZogPlugin
             ushort address = CSpectSocket.GetDataWord();
             // Get size
             ushort size = CSpectSocket.GetDataWord();
-            Console.WriteLine("address={0}, size={1}", address, size);
+            if (Log.Enabled)
+                Log.WriteLine("address={0}, size={1}", address, size);
 
             // Respond
             InitData(size);
@@ -671,11 +750,6 @@ namespace DeZogPlugin
             // Get sprite data
             InitData(5*count);
             var cspect = Main.CSpect;
-
-            // TODO: REMOVE
-            var spr=cspect.GetSprite(1);
-            Console.WriteLine("sprite={0} {1}", spr.x, spr.y);
-
             for (int i = 0; i < count; i++)
             {
                 var sprite = cspect.GetSprite(index + i);
@@ -699,7 +773,8 @@ namespace DeZogPlugin
             ushort index = CSpectSocket.GetDataByte();
             // Get size
             ushort count = CSpectSocket.GetDataByte();
-            Console.WriteLine("Sprite pattern index={0}, count={1}", index, count);
+            if (Log.Enabled)
+                Log.WriteLine("Sprite pattern index={0}, count={1}", index, count);
 
             // Respond
             int address = index * 256;
@@ -726,9 +801,15 @@ namespace DeZogPlugin
             cspect.SetNextRegister(0x1C, 0x02);
             byte[] clip = new byte[4];
             clip[0] = cspect.GetNextRegister(0x19); // xl
+            cspect.SetNextRegister(0x19, clip[0]);  // Increment index
             clip[1] = cspect.GetNextRegister(0x19); // xr
+            cspect.SetNextRegister(0x19, clip[1]);  // Increment index
             clip[2] = cspect.GetNextRegister(0x19); // yt
+            cspect.SetNextRegister(0x19, clip[2]);  // Increment index
             clip[3] = cspect.GetNextRegister(0x19); // yb
+            //cspect.SetNextRegister(0x19, clip[3]);  // Increment index.
+            if (Log.Enabled)
+                Log.WriteLine("Clip: xl={0}, xr={1}, yt={2}, yb={3}", clip[0], clip[1], clip[2], clip[3]);
             // Restore
             cspect.SetNextRegister(0x1C, 0x02); // reset
             for(int i=0; i<prevIndex;i++)
@@ -746,7 +827,8 @@ namespace DeZogPlugin
         {
             // Get border color
             byte color = CSpectSocket.GetDataByte();
-            //Console.WriteLine("Bordercolor={0}", color);
+            if (Log.Enabled)
+                Log.WriteLine("Bordercolor={0}", color);
             // Set border
             Main.CSpect.OutPort(0xFE, color);
             // Respond
@@ -757,11 +839,16 @@ namespace DeZogPlugin
         /**
          * Sends the pause notification.
          */
-        protected static void SendPauseNotification(BreakReason reason, int bpId)
+        protected static void SendPauseNotification(BreakReason reason, int bpId, string reasonString)
         {
+            // Convert strign to byte array
+            System.Text.ASCIIEncoding enc = new System.Text.ASCIIEncoding();
+            byte[] reasonBytes = enc.GetBytes(reasonString+"\0");
+            int stringLen = reasonBytes.Length;
+
             // Prepare data
-            int length = 6;
-            byte[] data =
+            int length = 5+stringLen;
+            byte[] dataWoString =
             {
                 // Length
                 (byte)(length & 0xFF),
@@ -777,9 +864,11 @@ namespace DeZogPlugin
                 // Breakpoint ID
                 (byte)(bpId & 0xFF),
                 (byte)((bpId >> 8) & 0xFF),
-                // No string
-                0
             };
+            int firstLen = dataWoString.Length;
+            byte[] data = new byte[firstLen + stringLen];
+            dataWoString.CopyTo(data, 0);
+            reasonBytes.CopyTo(data, firstLen);
 
             // Respond
             CSpectSocket.Send(data);

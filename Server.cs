@@ -103,10 +103,7 @@ namespace DeZogPlugin
 
         // Stores the received sequence number.
         protected static byte receveivedSeqno = 0;
-
-        // Set to true to enable logging.
-        public static bool LogEnabled;
-
+        
 
         /**
          * Call this to start listiening on 'Port'.
@@ -130,14 +127,14 @@ namespace DeZogPlugin
                 listener.Bind(localEndPoint);
                 listener.Listen(1);
 
-                Console.WriteLine("DeZog plugin: Waiting for a connection on port {0} (localhost)...", Port);
+                Log.WriteLine("DeZog plugin: Waiting for a connection on port {0} (localhost)...", Port);
 
                 // Start an asynchronous socket to listen for connections.  
                 listener.BeginAccept(new AsyncCallback(AcceptCallback), listener);
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                Log.WriteLine(e.ToString());
             }
         }
 
@@ -163,7 +160,7 @@ namespace DeZogPlugin
             handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
             CSpectSocket.socket = state;
 
-            Console.WriteLine("Connected.");
+            Log.WriteLine("Connected.");
         }
 
 
@@ -180,7 +177,7 @@ namespace DeZogPlugin
             try
             {
                 // Retrieve the state object and the handler socket  
-               if (receveivedSeqno != 0)
+                if (receveivedSeqno != 0)
                 {
                     // If this happens a response has not been sent for the previous message.
                     throw new Exception("Message received before command last response was sent.");
@@ -188,11 +185,12 @@ namespace DeZogPlugin
 
                 // Read data from the client socket.   
                 int bytesRead = handler.EndReceive(ar);
-                Console.WriteLine("bytesRead={0}, MsgLength={1}", bytesRead, state.MsgLength);
+                if (Log.Enabled)
+                    Log.WriteLine("bytesRead={0}, MsgLength={1}", bytesRead, state.MsgLength);
                 if (bytesRead <= 0)
                 {
                     // Disconnected
-                    Console.WriteLine("Disconnected.");
+                    Log.WriteLine("Disconnected.");
                     // Restart listener
                     StartListening();
                     return;
@@ -206,13 +204,17 @@ namespace DeZogPlugin
 
                 // Add data
                 List<byte> readData = new List<byte>(state.buffer);
-                Console.WriteLine("Data before: " + GetStringFromData(state.Data.ToArray()));
-                Console.WriteLine("Added data:  " + GetStringFromData(readData.ToArray(), 0, bytesRead));
+                if (Log.Enabled)
+                { 
+                    Log.WriteLine("Data before: " + GetStringFromData(state.Data.ToArray()));
+                    Log.WriteLine("Added data:  " + GetStringFromData(readData.ToArray(), 0, bytesRead));
+                }
                 state.Data.AddRange(readData.GetRange(0, bytesRead));
 
                 // Check if header was already previously received.
                 int len = state.Data.Count;
-                Console.WriteLine("Len={0}", len);
+                if (Log.Enabled)
+                    Log.WriteLine("Len={0}", len);
                 while (len > 0)
                 {
                     if (state.MsgLength == 0)
@@ -229,17 +231,19 @@ namespace DeZogPlugin
                             {
                                 // Wrong length detected
                                 state.error = true;
-                                Console.WriteLine("Length too short ({0}). Stopping communication. Please reconnect.", length);
+                                if (Log.Enabled)
+                                    Log.WriteLine("Length too short ({0}). Stopping communication. Please reconnect.", length);
                                 handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
                                 return;
                             }
-                            Console.WriteLine("Received Length={0}", length);
+                            if (Log.Enabled)
+                                Log.WriteLine("Received Length={0}", length);
                             state.MsgLength = length;
                         }
                     }
 
                     int totalLength = HEADER_LEN_LENGTH + state.MsgLength;
-                    //Console.WriteLine("state.MsgLength={0}, totalLength={1}", state.MsgLength, totalLength);
+                    //Log.WriteLine("state.MsgLength={0}, totalLength={1}", state.MsgLength, totalLength);
                     if (len < totalLength)
                         break;
 
@@ -247,11 +251,13 @@ namespace DeZogPlugin
                     ParseMessage(handler, state.Data);
                     // Next
                     state.MsgLength = 0;
-                    Console.WriteLine("Count={0}, totallength={1}", state.Data.Count, totalLength);
+                    if (Log.Enabled)
+                        Log.WriteLine("Count={0}, totallength={1}", state.Data.Count, totalLength);
                     //for (int i = 0; i < state.Data.Count; i++)
-                    //    Console.WriteLine("  Data[{0}]={1}", i, state.Data[i]);
+                    //    Log.WriteLine("  Data[{0}]={1}", i, state.Data[i]);
                     state.Data.RemoveRange(0, totalLength);
-                    Console.WriteLine("End of message, Data.Count={0}", state.Data.Count);
+                    if (Log.Enabled)
+                        Log.WriteLine("End of message, Data.Count={0}", state.Data.Count);
 
                     // Next
                     len -= totalLength;
@@ -262,7 +268,7 @@ namespace DeZogPlugin
             }
             catch (Exception e)
             {
-                Console.WriteLine("{0}", e);
+                Log.WriteLine("{0}", e);
                 HandleError(e.Message, handler);
             }
         }
@@ -274,10 +280,12 @@ namespace DeZogPlugin
          */
         protected static void ParseMessage(Socket socket, List<byte> data)
         {
-            Console.WriteLine("ParseMessage");
-            if (LogEnabled)
+            if (Log.Enabled)
+            {
+                Log.WriteLine("ParseMessage");
                 WriteCmd(data.ToArray());
-            Console.WriteLine("data.Count={0}", data.Count);
+                Log.WriteLine("data.Count={0}", data.Count);
+            }
 
             DzrpData = new List<byte>();
             int startIndex = HEADER_LEN_LENGTH + HEADER_CMD_SEQNO_LENGTH;
@@ -387,10 +395,10 @@ namespace DeZogPlugin
         protected static void HandleError(string text, Socket socket=null)
         {
 
-            Console.WriteLine("Error: {0}", text);
+            Log.WriteLine("Error: {0}", text);
             if (socket != null)
             {
-                Console.WriteLine("Disconnecting...");
+                Log.WriteLine("Disconnecting...");
                 try
                 {
                     socket.Shutdown(SocketShutdown.Both);
@@ -417,7 +425,6 @@ namespace DeZogPlugin
             byte value = CSpectSocket.DzrpData[0];
             // Remove it from fifo
             CSpectSocket.DzrpData.RemoveAt(0);
-            //Console.WriteLine("GetDataByte: Data.Count={0}", DzrpData.Count);
             // Return
             return value;
         }
@@ -438,7 +445,6 @@ namespace DeZogPlugin
             // Remove it from fifo
             DzrpData.RemoveAt(0);
             DzrpData.RemoveAt(0);
-            Console.WriteLine("GetDataWord: Data.Count={0}", DzrpData.Count);
             // Return
             return value;
         }
@@ -485,7 +491,7 @@ namespace DeZogPlugin
                 return;
 
             // Log
-            if (LogEnabled)
+            if (Log.Enabled)
                 WriteResp(byteData);
             // Begin sending the data to the remote device.
             Socket handler = CSpectSocket.socket.workSocket;
@@ -506,11 +512,12 @@ namespace DeZogPlugin
 
                 // Complete sending the data to the remote device.  
                 int bytesSent = handler.EndSend(ar);
-                Console.WriteLine("Sent {0} bytes to client.", bytesSent);
+                if (Log.Enabled)
+                    Log.WriteLine("Sent {0} bytes to client.", bytesSent);
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                Log.WriteLine(e.ToString());
             }
         }
 
@@ -540,7 +547,7 @@ namespace DeZogPlugin
 
 
         /**
-         * Writes a received command message to the console.
+         * Writes a received command message to the Log.
          */
         protected static void WriteCmd(byte[] data)
         {
@@ -552,22 +559,22 @@ namespace DeZogPlugin
                 int seqno = data[4];
                 int cmd = data[5];
                 string cmdString = ((DZRP)cmd).ToString();
-                Console.WriteLine();
-                Console.WriteLine("<-- Command {0}:", cmdString);
-                Console.WriteLine("  Length: {0} ", length);
-                Console.WriteLine("  SeqNo:  {0}", seqno);
-                Console.WriteLine("  Cmd:    {0}", cmd);
+                Log.WriteLine();
+                Log.WriteLine("<-- Command {0}:", cmdString);
+                Log.WriteLine("  Length: {0} ", length);
+                Log.WriteLine("  SeqNo:  {0}", seqno);
+                Log.WriteLine("  Cmd:    {0}", cmd);
                 index = 6;
             }
             // Rest of data
             string dataString = GetStringFromData(data, index);
-            Console.Write("  Data:"+dataString);
-            Console.WriteLine();
+            Log.Write("  Data:"+dataString);
+            Log.WriteLine();
         }
 
 
         /**
-         * Writes a sent response message to the console.
+         * Writes a sent response message to the Log.
          */
         protected static void WriteResp(byte[] data)
         {
@@ -582,16 +589,16 @@ namespace DeZogPlugin
                     text = "Notification:";
                 else
                     text = "Response:";
-                Console.WriteLine();
-                Console.WriteLine("--> "+text);
-                Console.WriteLine("  Length: {0} ", length);
-                Console.WriteLine("  SeqNo:  {0}", seqno);
+                Log.WriteLine();
+                Log.WriteLine("--> "+text);
+                Log.WriteLine("  Length: {0} ", length);
+                Log.WriteLine("  SeqNo:  {0}", seqno);
                 index = 5;
             }
             // Rest of data
             string dataString = GetStringFromData(data, index);
-            Console.Write("  Data:" + dataString);
-            Console.WriteLine();
+            Log.Write("  Data:" + dataString);
+            Log.WriteLine();
         }
 
     }

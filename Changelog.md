@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.0
+- Getting sprites clip window fixed.
+- Added watchpoints.
+
 ## 0.5.0
 - Using CSpect 2.12.22.
 

@@ -26,14 +26,13 @@ namespace DeZogPlugin
          */
         public List<sIO> Init(iCSpect _CSpect)
         {
-            Console.WriteLine("DeZog plugin started.");
-            
             // Read settings file (port)
             Settings = Settings.Load();
+            Log.Enabled = Settings.LogEnabled;
 
-            CSpectSocket.LogEnabled = Settings.LogEnabled;
+            Log.ConsoleWriteLine("DeZog plugin started.");
 
-            //Server.Listen(Settings.Port);
+           //Server.Listen(Settings.Port);
             CSpectSocket.Port = Settings.Port;
             CSpectSocket.StartListening();
 
@@ -51,7 +50,7 @@ namespace DeZogPlugin
         public void Quit()
         {
             // If the program is stopped the socket is closed anyway.
-            Console.WriteLine("DeZog plugin terminated.");
+            Log.ConsoleWriteLine("DeZog plugin terminated.");
         }
 
 
@@ -60,15 +59,6 @@ namespace DeZogPlugin
          */
         public void Tick()
         {
-            /*
-            InstructionCounter++;
-            if(InstructionCounter % 50 == 0)
-            {
-                Console.WriteLine("Tick called, instruction {0}.", InstructionCounter);
-                Z80Regs regs = CSpect.GetRegs();
-                Console.WriteLine("  PC={0:X4}, SP={1:X4}, AF={2:X4}, BC={3:X4}, DE={4:X4}, HL={5:X4}, IX={6:X4}, IY={7:X4}", regs.PC, regs.SP, regs.AF, regs.BC, regs.DE, regs.HL, regs.IX, regs.IY);
-            }
-            */
             Commands.Tick();
         }
         

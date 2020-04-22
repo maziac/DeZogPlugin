@@ -18,11 +18,10 @@ What should work is:
 - Memory display
 - Register display
 - Setting breakpoints
+- Sprite display
 
 What's not working/not tested:
 - Breakpoint conditions (not tested)
-- Watchpoints
-- Sprite display
 
 
 # Plugin Installation
@@ -70,11 +69,6 @@ Please see [DZRP-DeZog Remote Protocol](https://github.com/maziac/DeZog/blob/mas
 
 # Known Problems
 
-- StepOut:
-  - A break/pause during StepOut is not working.
-  - Does not break if running over a breakout.
-  - Flickering of CSpect display.
-- Break reasons not displayed.
 
 
 # Acknowledgements
