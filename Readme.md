@@ -9,19 +9,15 @@ DeZog will connect to this socket when a debug session is started.
 
 # State
 
-The plugin is working with CSpect v2.12.17.
-The state is: it is working but still experimental.
+The plugin is working with CSpect v2.12.22.
+The state is: it is working but still experimental, (but almost stable).
 
 What should work is:
-- Continue/StepInto/StepOver/StepOut (see "Known Problems")
-- Lite reverse stepping
+- Continue/StepInto/StepOver/StepOut
 - Memory display
 - Register display
 - Setting breakpoints
 - Sprite display
-
-What's not working/not tested:
-- Breakpoint conditions (not tested)
 
 
 # Plugin Installation
@@ -65,9 +61,6 @@ You can change the used port by providing a different port number in the DeZogPl
 ## Socket Protocol
 
 Please see [DZRP-DeZog Remote Protocol](https://github.com/maziac/DeZog/blob/master/design/DeZogProtocol.md).
-
-
-# Known Problems
 
 
 
