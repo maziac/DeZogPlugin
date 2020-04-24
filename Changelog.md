@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.7.0
+- DZRP v0.2.0: PAUSE notification returns breakpoint address instead breakpoint ID.
 
 ## 0.6.0
 - Getting sprites clip window fixed.

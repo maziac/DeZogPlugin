@@ -196,30 +196,21 @@ namespace DeZogPlugin
             // Guess break reason
             BreakReason reason = BreakReason.MANUAL_BREAK;
             string reasonString = "";
-            int bpId = 0;
+            ushort bpAddress = 0;
             var regs = cspect.GetRegs();
             var pc = regs.PC;
-            if (BreakpointMap.ContainsValue(pc))
+            //  First check for temporary breakpoints
+            if (pc == TmpBreakpoint1 || pc == TmpBreakpoint2)
+            {
+                reason = BreakReason.NO_REASON;
+                bpAddress = pc;
+            }
+            // Check for breakpoint
+            else if (BreakpointMap.ContainsValue(pc))
             {
                 // Breakpoint hit
                 reason = BreakReason.BREAKPOINT_HIT;
-                // Get ID
-                foreach (var pair in BreakpointMap)
-                {
-                    if(pair.Value == pc)
-                    {
-                        bpId = pair.Key;
-                        if (Log.Enabled)
-                            Log.WriteLine("Found BpID={0} for PC={1}", bpId, pc);
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                // Check temporary breakpoints
-                if (pc == TmpBreakpoint1 || pc == TmpBreakpoint2)
-                    reason = BreakReason.NO_REASON;
+                bpAddress = pc;
             }
 
             // Note: Watchpoint reasons cannot be safely recognized.
@@ -245,7 +236,7 @@ namespace DeZogPlugin
                 }
             }
             // Send break notification
-            SendPauseNotification(reason, bpId, reasonString);
+            SendPauseNotification(reason, bpAddress, reasonString);
 
             // "Undefine" temporary breakpoints
             TmpBreakpoint1 = -1;
@@ -839,7 +830,7 @@ namespace DeZogPlugin
         /**
          * Sends the pause notification.
          */
-        protected static void SendPauseNotification(BreakReason reason, int bpId, string reasonString)
+        protected static void SendPauseNotification(BreakReason reason, ushort bpAddress, string reasonString)
         {
             // Convert strign to byte array
             System.Text.ASCIIEncoding enc = new System.Text.ASCIIEncoding();
@@ -861,9 +852,9 @@ namespace DeZogPlugin
                 (byte)DZRP_NTF.NTF_PAUSE,
                 // Reason
                 (byte)reason,
-                // Breakpoint ID
-                (byte)(bpId & 0xFF),
-                (byte)((bpId >> 8) & 0xFF),
+                // Breakpoint address
+                (byte)(bpAddress & 0xFF),
+                (byte)((bpAddress >> 8) & 0xFF),
             };
             int firstLen = dataWoString.Length;
             byte[] data = new byte[firstLen + stringLen];

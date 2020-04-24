@@ -10,7 +10,7 @@ using Plugin;
 namespace DeZogPlugin
 {
     /**
-     * The plugin implements a socket to communitate with [DeZog](https://github.com/maziac/DeZog).
+     * The plugin implements a socket to communicate with [DeZog](https://github.com/maziac/DeZog).
      * The received commands are executed and control the CSpect debugger.
      */
     public class Main : iPlugin
