@@ -7,29 +7,27 @@ This plugin establishes a listening socket.
 DeZog will connect to this socket when a debug session is started.
 
 
-# State
+# Functionality
 
-The plugin is working with CSpect v2.12.22.
-The state is: it is working but still experimental, (but almost stable).
-
-What should work is:
+The plugin supports DZRP v1.0. With the following functionality:
 - Continue/StepInto/StepOver/StepOut
-- Memory display
-- Register display
-- Setting breakpoints
-- Sprite display
+- Get memory content
+- Get register content
+- Setting breakpoints, watchpoints
+- Get sprite patterns and attributes
 
 
 # Plugin Installation
 
 The plugin can be compiled with Visual Studio (19). It has been built with VS on a Mac.
-Most probably this will work on Windows as well but has not been tested.
 
 You can find precompiled DLLs [here](https://github.com/maziac/DeZogPlugin/releases).
 
-Place the DeZogPlugin.dll (and the DeZogPlugin.dll.config) in the root directory of CSpect (i.e. at the same level as the CSpect.exe program).
+Place the DeZogPlugin.dll in the root directory of CSpect (i.e. at the same level as the CSpect.exe program).
 Once you start CSpect it will automatically start the plugin.
 If everything works well you will see a message in the console: "DeZog plugin started."
+
+The plugin per default uses socket port 11000. If this is occupied on your system you can change it, see [Socket Configuration](#socket-configuration).
 
 For the DeZog configuration see [DeZog](https://github.com/maziac/DeZog).
 Basically you need to create a launch.json with and set the port (if different from default).
@@ -45,9 +43,14 @@ mono CSpect.exe -w4 -zxnext -nextrom -exit -brk -tv
 
 # Build
 
-Each new version of CSpect the new Plugin.dll needs to be referenced.
+If the Plugin.dll changes in a new version of CSpect the DeZog plugin needs to be recompiled.
+Therefore the Plugin.dll needs to be referenced inside the DeZog plugin project.
 In the Cpect directory a link can be made (ln) to the dll, so it is not required each time to copy the dll.
 (Note: macOS link via desktop is not working, use commandline "ln -s".)
+
+## Release vs. Debug build
+
+There is not much difference in the builds. The Debug build is 22kB in size the Release build is 20kB. Also performance shouldn't make much difference.
 
 
 # Socket Usage
@@ -56,6 +59,15 @@ In the Cpect directory a link can be made (ln) to the dll, so it is not required
 
 The DeZog plugin starts to listen for a socket connection on startup at port 11000.
 You can change the used port by providing a different port number in the DeZogPlugin.dll.config file.
+The DeZogPlugin.dll.config is placed in the same directory as the DeZogPlugin.dll or Cspect.exe.
+
+Here is an examle DeZogPlugin.dll.config:
+~~~
+<?xml version="1.0" encoding="utf-8"?>
+<Settings xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <Port>11000</Port>
+</Settings>
+~~~
 
 
 ## Socket Protocol
