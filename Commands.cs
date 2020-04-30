@@ -88,14 +88,6 @@ namespace DeZogPlugin
             TmpBreakpoint2 = -1;
             CpuRunning = false;
             StartCpu(false);
-
-            // Clear all breakpoints etc.
-            for (int addr = 0; addr < 0x10000; addr++)
-            {
-                cspect.Debugger(Plugin.eDebugCommand.ClearBreakpoint, addr);
-                cspect.Debugger(Plugin.eDebugCommand.ClearReadBreakpoint, addr);
-                cspect.Debugger(Plugin.eDebugCommand.ClearWriteBreakpoint, addr);
-            }
         }
 
 
@@ -106,6 +98,33 @@ namespace DeZogPlugin
         {
             Index = 0;
             Data = new byte[size];
+        }
+
+
+        /**
+         * Debug function to print all Breakpoints and watchpoints.
+         */
+        protected static void PrintAllBpWp()
+        {
+            Console.WriteLine("PrintAllBpWp");
+            var cspect = Main.CSpect;
+            for (int addr = 0; addr < 0x10000; addr++)
+            {
+                var bp=cspect.Debugger(Plugin.eDebugCommand.GetBreakpoint, addr);
+                var wpr=cspect.Debugger(Plugin.eDebugCommand.GetReadBreakpoint, addr);
+                var wpw=cspect.Debugger(Plugin.eDebugCommand.GetWriteBreakpoint, addr);
+                if ((bp | wpr | wpw) != 0)
+                {
+                    Console.Write("  Address 0x{0:X4}:", addr);
+                    if (bp != 0)
+                        Console.Write(" [Breakpoint]");
+                    if (wpr != 0)
+                        Console.Write(" [Watchpoint read]");
+                    if (wpw != 0)
+                        Console.Write(" [Watchpoint write]");
+                    Console.WriteLine();
+                }
+            }
         }
 
 
@@ -121,6 +140,7 @@ namespace DeZogPlugin
             var cspect = Main.CSpect;
             if (start)
             {
+                PrintAllBpWp();
                 // Run
                 cspect.Debugger(Plugin.eDebugCommand.Run);
             }
@@ -177,11 +197,14 @@ namespace DeZogPlugin
          */
         protected static void DebuggerStopped()
         {
+            // Get PC
+            var cspect = Main.CSpect;
+            var regs = cspect.GetRegs();
+            var pc = regs.PC;
             if (Log.Enabled)
-                Log.WriteLine("Debugger stopped");
+                Log.WriteLine("Debugger stopped at 0x{0:X4}", pc);
 
             // Disable temporary breakpoints
-            var cspect = Main.CSpect;
             if (TmpBreakpoint1 >= 0)
             {
                 if(!BreakpointMap.ContainsValue((ushort)TmpBreakpoint1))
@@ -197,8 +220,6 @@ namespace DeZogPlugin
             BreakReason reason = BreakReason.MANUAL_BREAK;
             string reasonString = "";
             ushort bpAddress = 0;
-            var regs = cspect.GetRegs();
-            var pc = regs.PC;
             //  First check for temporary breakpoints
             if (pc == TmpBreakpoint1 || pc == TmpBreakpoint2)
             {
@@ -270,6 +291,14 @@ namespace DeZogPlugin
          */
         public static void CmdInit()
         {
+            // Clear all breakpoints etc.
+            var cspect = Main.CSpect;
+            for (int addr = 0; addr < 0x10000; addr++)
+            {
+                cspect.Debugger(Plugin.eDebugCommand.ClearBreakpoint, addr);
+                cspect.Debugger(Plugin.eDebugCommand.ClearReadBreakpoint, addr);
+                cspect.Debugger(Plugin.eDebugCommand.ClearWriteBreakpoint, addr);
+            }
             // Return configuration
             CSpectSocket.SendResponse(DZRP_VERSION);
         }
@@ -443,13 +472,17 @@ namespace DeZogPlugin
             if (bp1Enable)
             {
                 TmpBreakpoint1 = bp1Address;
-                cspect.Debugger(Plugin.eDebugCommand.SetBreakpoint, TmpBreakpoint1);
+                var result = cspect.Debugger(Plugin.eDebugCommand.SetBreakpoint, TmpBreakpoint1);
+                if (Log.Enabled)
+                    Console.WriteLine("  Set tmp breakpoint 1 at 0x{0:X4}, result={1}", TmpBreakpoint1, result);
             }
             TmpBreakpoint2 = -1;
             if (bp2Enable)
             {
                 TmpBreakpoint2 = bp2Address;
-                cspect.Debugger(Plugin.eDebugCommand.SetBreakpoint, TmpBreakpoint2);
+                var result = cspect.Debugger(Plugin.eDebugCommand.SetBreakpoint, TmpBreakpoint2);
+                if (Log.Enabled)
+                    Console.WriteLine("  Set tmp breakpoint 2 at 0x{0:X4}, result={1}", TmpBreakpoint2, result);
             }
 
             // Log
@@ -459,13 +492,13 @@ namespace DeZogPlugin
                 Log.WriteLine("Continue: Run debugger. pc=0x{0:X4}/{0}, bp1=0x{1:X4}/{1}, bp2=0x{2:X4}/{2}", regs.PC, TmpBreakpoint1, TmpBreakpoint2);
             }
 
+            // Respond
+            CSpectSocket.SendResponse();
+
             // Run
             ManualBreak = false;
             StartCpu(true);
-
-            // Respond
-            CSpectSocket.SendResponse();
-        }
+       }
 
 
         /**
@@ -677,6 +710,9 @@ namespace DeZogPlugin
             InitData(1);
             byte value = cspect.GetNextRegister(reg);
             SetByte(value);
+            // Log
+            if (Log.Enabled)
+                Log.WriteLine("GetNextRegister({0:X2}):, {1}", reg, value);
             // Respond
             CSpectSocket.SendResponse(Data);
         }
@@ -713,6 +749,7 @@ namespace DeZogPlugin
                 SetByte(colorMain);
                 byte color9th = cspect.GetNextRegister(0x44);
                 SetByte(color9th);
+                //Console.WriteLine("Palette index={0}: 8bit={1}, 9th bit={2}", i, colorMain, color9th);
             }
             // Restore values
             cspect.SetNextRegister(0x43, eUlaCtrlReg);
