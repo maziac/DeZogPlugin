@@ -40,7 +40,7 @@ namespace DeZogPlugin
         CMD_GET_SPRITES_PALETTE = 0x11,
         CMD_GET_SPRITES = 0x12,
         CMD_GET_SPRITE_PATTERNS = 0x13,
-        CMD_GET_SPRITE_CLIP_WINDOW = 0x14,
+        CMD_GET_SPRITE_CLIP_WINDOW_AND_CONTROL = 0x14,
 
         CMD_SET_BORDER = 0x15,
     }
@@ -112,6 +112,9 @@ namespace DeZogPlugin
         public static void StartListening()
         {
             socket = null;
+
+            // Reset Command class.
+            Commands.Reset();
 
             // Establish the local endpoint for the socket.  
             IPAddress ipAddress = IPAddress.Loopback;   // localhost
@@ -374,7 +377,7 @@ namespace DeZogPlugin
                     Commands.GetSpritePatterns();
                     break;
 
-                case DZRP.CMD_GET_SPRITE_CLIP_WINDOW:
+                case DZRP.CMD_GET_SPRITE_CLIP_WINDOW_AND_CONTROL:
                     Commands.GetSpritesClipWindow();
                     break;
 

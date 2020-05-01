@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.0
+- Fixed a mix of response and notification problem (asynchronous problem)
+- DZRP v0.3.0: Changed commands to obtain the clip window/sprite priority.
+- Reset breakpoints when connection is lost.
+
 ## 0.7.0
 - DZRP v0.2.0: PAUSE notification returns breakpoint address instead of breakpoint ID.
 

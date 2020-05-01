@@ -26,6 +26,8 @@ namespace DeZogPlugin
          */
         public List<sIO> Init(iCSpect _CSpect)
         {
+            CSpect = _CSpect;
+
             // Read settings file (port)
             Settings = Settings.Load();
             Log.Enabled = Settings.LogEnabled;
@@ -35,8 +37,6 @@ namespace DeZogPlugin
            //Server.Listen(Settings.Port);
             CSpectSocket.Port = Settings.Port;
             CSpectSocket.StartListening();
-
-            CSpect = _CSpect;
 
             // No ports
             List<sIO> ports = new List<sIO>();

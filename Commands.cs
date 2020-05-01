@@ -58,6 +58,7 @@ namespace DeZogPlugin
 
 
         // The breakpoint map to keep the IDs and addresses.
+        // If it is null then the connection is not active.
         protected static Dictionary<ushort,ushort> BreakpointMap = null;
 
         // The last breakpoint ID used.
@@ -71,6 +72,7 @@ namespace DeZogPlugin
 
         // Stores if a PAUSE command has been sent.
         protected static bool ManualBreak = false;
+
 
         /**
          * General initalization function.
@@ -88,6 +90,22 @@ namespace DeZogPlugin
             TmpBreakpoint2 = -1;
             CpuRunning = false;
             StartCpu(false);
+        }
+
+
+        /**
+         * Resets the breakpoint map.
+         * Is called so that 'tick' does not process ticks anymore.
+         */
+        public static void Reset()
+        {
+            BreakpointMap = null;
+            LastBreakpointId = 0;
+            TmpBreakpoint1 = -1;
+            TmpBreakpoint2 = -1;
+            CpuRunning = false;
+            // Clear breakpoints
+            ClearAllBreakAndWatchpoints();
         }
 
 
@@ -287,9 +305,9 @@ namespace DeZogPlugin
 
 
         /**
-         * Returns the configuration.
+         * Clears all break- and watchpoints.
          */
-        public static void CmdInit()
+        protected static void ClearAllBreakAndWatchpoints()
         {
             // Clear all breakpoints etc.
             var cspect = Main.CSpect;
@@ -299,6 +317,16 @@ namespace DeZogPlugin
                 cspect.Debugger(Plugin.eDebugCommand.ClearReadBreakpoint, addr);
                 cspect.Debugger(Plugin.eDebugCommand.ClearWriteBreakpoint, addr);
             }
+        }
+
+
+        /**
+         * Returns the configuration.
+         */
+        public static void CmdInit()
+        {
+            // Clear breakpoints
+            ClearAllBreakAndWatchpoints();
             // Return configuration
             CSpectSocket.SendResponse(DZRP_VERSION);
         }
@@ -827,7 +855,7 @@ namespace DeZogPlugin
             prevIndex = (prevIndex >> 2) & 0x03;
             // Get clip window
             cspect.SetNextRegister(0x1C, 0x02);
-            byte[] clip = new byte[4];
+            byte[] clip = new byte[5];
             clip[0] = cspect.GetNextRegister(0x19); // xl
             cspect.SetNextRegister(0x19, clip[0]);  // Increment index
             clip[1] = cspect.GetNextRegister(0x19); // xr
@@ -835,9 +863,10 @@ namespace DeZogPlugin
             clip[2] = cspect.GetNextRegister(0x19); // yt
             cspect.SetNextRegister(0x19, clip[2]);  // Increment index
             clip[3] = cspect.GetNextRegister(0x19); // yb
+            clip[4] = cspect.GetNextRegister(0x15); // sprite control register
             //cspect.SetNextRegister(0x19, clip[3]);  // Increment index.
             if (Log.Enabled)
-                Log.WriteLine("Clip: xl={0}, xr={1}, yt={2}, yb={3}", clip[0], clip[1], clip[2], clip[3]);
+                Log.WriteLine("Clip: xl={0}, xr={1}, yt={2}, yb={3}, control={4:X2}", clip[0], clip[1], clip[2], clip[3], clip[4]);
             // Restore
             cspect.SetNextRegister(0x1C, 0x02); // reset
             for(int i=0; i<prevIndex;i++)
