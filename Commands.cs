@@ -30,7 +30,7 @@ namespace DeZogPlugin
      */
     public class Commands
     {
-        protected static byte[] DZRP_VERSION = { 0, 1, 0 };
+        protected static byte[] DZRP_VERSION = { 0, 4, 0 };
 
         /**
          * The break reason.
@@ -43,6 +43,17 @@ namespace DeZogPlugin
             WATCHPOINT_READ = 3,
             WATCHPOINT_WRITE = 4,
             OTHER = 255,
+        }
+
+
+        /**
+         * The alternate command for CMD_CONTINUE.
+         */
+        protected enum AlternateCommand
+        {
+            CONTINUE = 0,   // I.e. no alternate command
+            STEP_OVER = 1,
+            STEP_OUT = 2
         }
 
 
@@ -200,6 +211,8 @@ namespace DeZogPlugin
             if (CpuRunning != running)
             {
                 // State changed
+                if (Log.Enabled)
+                    Log.WriteLine("Debugger state changed to {0}, 0=running", debugState);
                 CpuRunning = running;
                 if (running == false)
                 {
@@ -487,6 +500,7 @@ namespace DeZogPlugin
          */
         public static void Continue()
         {
+            var cspect = Main.CSpect;
             // Breakpoint 1
             bool bp1Enable = (CSpectSocket.GetDataByte() != 0);
             ushort bp1Address = CSpectSocket.GetDataWord();
@@ -494,39 +508,84 @@ namespace DeZogPlugin
             bool bp2Enable = (CSpectSocket.GetDataByte() != 0);
             ushort bp2Address = CSpectSocket.GetDataWord();
 
-            // Set temporary breakpoints
+            // Alternate command?
+            //AlternateCommand alternateCmd = (AlternateCommand)CSpectSocket.GetDataByte();
+            AlternateCommand alternateCmd = AlternateCommand.CONTINUE;
+            switch (alternateCmd)
+            {
+                /* Note: Cspect cannot support this because of the strange step-over behavior:
+                 * CSpect step-over does not step-over a conditional jump backwards, e.g. "JP cc, -5"
+                case AlternateCommand.STEP_OVER: // Step over
+                    ushort address = CSpectSocket.GetDataWord();
+                    ushort endAddress = CSpectSocket.GetDataWord();
+                    // Respond
+                    CSpectSocket.SendResponse();
+                    //ManualBreak = false;
+                    //CpuRunning = true;
+                    //cspect.Debugger(Plugin.eDebugCommand.StepOver);
+                    break;
+                    
+                case AlternateCommand.STEP_OUT: // Step out
+                    // Respond
+                    CSpectSocket.SendResponse();
+                    break;
+                    */
+
+                case AlternateCommand.CONTINUE: // Continue
+                default:
+                    // Set temporary breakpoints
+                    TmpBreakpoint1 = -1;
+                    if (bp1Enable)
+                    {
+                        TmpBreakpoint1 = bp1Address;
+                        var result = cspect.Debugger(Plugin.eDebugCommand.SetBreakpoint, TmpBreakpoint1);
+                        if (Log.Enabled)
+                            Console.WriteLine("  Set tmp breakpoint 1 at 0x{0:X4}, result={1}", TmpBreakpoint1, result);
+                    }
+                    TmpBreakpoint2 = -1;
+                    if (bp2Enable)
+                    {
+                        TmpBreakpoint2 = bp2Address;
+                        var result = cspect.Debugger(Plugin.eDebugCommand.SetBreakpoint, TmpBreakpoint2);
+                        if (Log.Enabled)
+                            Console.WriteLine("  Set tmp breakpoint 2 at 0x{0:X4}, result={1}", TmpBreakpoint2, result);
+                    }
+
+                    // Log
+                    if (Log.Enabled)
+                    {
+                        var regs = cspect.GetRegs();
+                        Log.WriteLine("Continue: Run debugger. pc=0x{0:X4}/{0}, bp1=0x{1:X4}/{1}, bp2=0x{2:X4}/{2}", regs.PC, TmpBreakpoint1, TmpBreakpoint2);
+                    }
+
+                    // Respond
+                    CSpectSocket.SendResponse();
+
+                    // Run
+                    ManualBreak = false;
+                    StartCpu(true);
+                    break;
+            }
+        }
+
+
+        /**
+         * Does a Step-Over.
+         * Step-over in a loop until PC is out of the given range.
+         * The idea isto step over e.g. a macro which consists of several instructions.
+         */
+        public static void StepOver(ushort address, ushort endAddress)
+        {
             var cspect = Main.CSpect;
-            TmpBreakpoint1 = -1;
-            if (bp1Enable)
+            // Step over
+            while (true)
             {
-                TmpBreakpoint1 = bp1Address;
-                var result = cspect.Debugger(Plugin.eDebugCommand.SetBreakpoint, TmpBreakpoint1);
-                if (Log.Enabled)
-                    Console.WriteLine("  Set tmp breakpoint 1 at 0x{0:X4}, result={1}", TmpBreakpoint1, result);
-            }
-            TmpBreakpoint2 = -1;
-            if (bp2Enable)
-            {
-                TmpBreakpoint2 = bp2Address;
-                var result = cspect.Debugger(Plugin.eDebugCommand.SetBreakpoint, TmpBreakpoint2);
-                if (Log.Enabled)
-                    Console.WriteLine("  Set tmp breakpoint 2 at 0x{0:X4}, result={1}", TmpBreakpoint2, result);
-            }
-
-            // Log
-            if (Log.Enabled)
-            {
+                cspect.Debugger(Plugin.eDebugCommand.StepOver);
                 var regs = cspect.GetRegs();
-                Log.WriteLine("Continue: Run debugger. pc=0x{0:X4}/{0}, bp1=0x{1:X4}/{1}, bp2=0x{2:X4}/{2}", regs.PC, TmpBreakpoint1, TmpBreakpoint2);
+                if (regs.PC < address || regs.PC >= endAddress)
+                    break;
             }
-
-            // Respond
-            CSpectSocket.SendResponse();
-
-            // Run
-            ManualBreak = false;
-            StartCpu(true);
-       }
+        }
 
 
         /**

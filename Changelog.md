@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.9.0
+- DZRP v0.4.0: Changes to CMD_CONTINUE.
+
 ## 0.8.0
 - Fixed a mix of response and notification problem (asynchronous problem)
 - DZRP v0.3.0: Changed commands to obtain the clip window/sprite priority.

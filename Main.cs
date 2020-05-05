@@ -26,15 +26,16 @@ namespace DeZogPlugin
          */
         public List<sIO> Init(iCSpect _CSpect)
         {
+            Console.WriteLine("DeZog plugin (v{0}) started.", typeof(Main).Assembly.GetName().Version);
+
             CSpect = _CSpect;
 
             // Read settings file (port)
             Settings = Settings.Load();
             Log.Enabled = Settings.LogEnabled;
 
-            Log.ConsoleWriteLine("DeZog plugin started.");
-
-           //Server.Listen(Settings.Port);
+ 
+            //Server.Listen(Settings.Port);
             CSpectSocket.Port = Settings.Port;
             CSpectSocket.StartListening();
 
