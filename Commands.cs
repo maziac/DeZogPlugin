@@ -169,7 +169,7 @@ namespace DeZogPlugin
             var cspect = Main.CSpect;
             if (start)
             {
-                PrintAllBpWp();
+                //PrintAllBpWp();
                 // Run
                 cspect.Debugger(Plugin.eDebugCommand.Run);
             }
