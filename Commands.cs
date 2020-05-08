@@ -56,6 +56,8 @@ namespace DeZogPlugin
             STEP_OUT = 2
         }
 
+        // Used for locking
+        protected static object lockObj = new Object();
 
         // Index for setting a byte in the array.
         protected static int Index;
@@ -90,17 +92,21 @@ namespace DeZogPlugin
          */
         public static void Init()
         {
-            var cspect = Main.CSpect;
-            bool dbgVisible = Main.Settings.CSpectDebuggerVisible;
-            if (Log.Enabled)
-                Log.WriteLine("CSpectDebuggerVisible={0}", dbgVisible);
-            cspect.Debugger(Plugin.eDebugCommand.SetRemote, (dbgVisible) ? 0 : 1);
-            BreakpointMap = new Dictionary<ushort, ushort>();
-            LastBreakpointId = 0;
-            TmpBreakpoint1 = -1;
-            TmpBreakpoint2 = -1;
-            CpuRunning = false;
-            StartCpu(false);
+            lock (lockObj)
+            {
+                var cspect = Main.CSpect;
+                bool dbgVisible = Main.Settings.CSpectDebuggerVisible;
+                if (Log.Enabled)
+                    Log.WriteLine("CSpectDebuggerVisible={0}", dbgVisible);
+                cspect.Debugger(Plugin.eDebugCommand.SetRemote, (dbgVisible) ? 0 : 1);
+                BreakpointMap = new Dictionary<ushort, ushort>();
+                LastBreakpointId = 0;
+                TmpBreakpoint1 = -1;
+                TmpBreakpoint2 = -1;
+                // Stop
+                CpuRunning = false;
+                cspect.Debugger(Plugin.eDebugCommand.Enter);
+            }
         }
 
 
@@ -110,13 +116,16 @@ namespace DeZogPlugin
          */
         public static void Reset()
         {
-            BreakpointMap = null;
-            LastBreakpointId = 0;
-            TmpBreakpoint1 = -1;
-            TmpBreakpoint2 = -1;
-            CpuRunning = false;
-            // Clear breakpoints
-            ClearAllBreakAndWatchpoints();
+            lock (lockObj)
+            {
+                BreakpointMap = null;
+                LastBreakpointId = 0;
+                TmpBreakpoint1 = -1;
+                TmpBreakpoint2 = -1;
+                CpuRunning = false;
+                // Clear breakpoints
+                ClearAllBreakAndWatchpoints();
+            }
         }
 
 
@@ -139,9 +148,9 @@ namespace DeZogPlugin
             var cspect = Main.CSpect;
             for (int addr = 0; addr < 0x10000; addr++)
             {
-                var bp=cspect.Debugger(Plugin.eDebugCommand.GetBreakpoint, addr);
-                var wpr=cspect.Debugger(Plugin.eDebugCommand.GetReadBreakpoint, addr);
-                var wpw=cspect.Debugger(Plugin.eDebugCommand.GetWriteBreakpoint, addr);
+                var bp = cspect.Debugger(Plugin.eDebugCommand.GetBreakpoint, addr);
+                var wpr = cspect.Debugger(Plugin.eDebugCommand.GetReadBreakpoint, addr);
+                var wpw = cspect.Debugger(Plugin.eDebugCommand.GetWriteBreakpoint, addr);
                 if ((bp | wpr | wpw) != 0)
                 {
                     Console.Write("  Address 0x{0:X4}:", addr);
@@ -162,21 +171,31 @@ namespace DeZogPlugin
          */
         protected static void StartCpu(bool start)
         {
-            // Is required. Otherwise a stop could be missed because the tick is called only
-            // every 20ms. If start/stop happens within this timeframe it would not be recognized.
-            CpuRunning = start;
-            // Start/stop
-            var cspect = Main.CSpect;
-            if (start)
+
+            //if (start)
+            //    PrintAllBpWp();
+
+
+            // The lock is required, otherwise CpuRunning can be set here and the Tick() jumps in
+            // between "CpuRunning = true/false" and "eDebugCommand.Run/Enter"
+            lock (lockObj)
             {
-                //PrintAllBpWp();
-                // Run
-                cspect.Debugger(Plugin.eDebugCommand.Run);
-            }
-            else
-            {
-                // Stop
-                cspect.Debugger(Plugin.eDebugCommand.Enter);
+                // Is required. Otherwise a stop could be missed because the tick is called only
+                // every 20ms. If start/stop happens within this timeframe it would not be recognized.
+                //CpuRunning = start;
+                // Start/stop
+                var cspect = Main.CSpect;
+                CpuRunning = start;
+                if (start)
+                {
+                    // Run
+                   cspect.Debugger(Plugin.eDebugCommand.Run);
+                }
+                else
+                {
+                    // Stop
+                    cspect.Debugger(Plugin.eDebugCommand.Enter);
+                }
             }
         }
 
@@ -190,33 +209,22 @@ namespace DeZogPlugin
             if (BreakpointMap == null)
                 return;
 
-
-            // TODO: REMOVE
-            /*
-            if(Log.Enabled)
-            {
-            for (int i = 0; i < 128; i++)
-                {
-                    var spr = Main.CSpect.GetSprite(i);
-                    if ((spr.visible_name&0x80) != 0)
-                        Log.WriteLine("sprite[{0}]: x={1}, y={2}, a2={3:X2}, a3={4:X2}, a4={5:X2}", i, spr.x, spr.y, spr.paloff_mirror_flip_rotate_xmsb, spr.visible_name, spr.H_N6_0_XX_YY_Y8);
-                }
-            }
-            */
-
             // Check if debugger state changed
-            var cspect = Main.CSpect;
-            var debugState = cspect.Debugger(Plugin.eDebugCommand.GetState);
-            bool running = (debugState == 0);
-            if (CpuRunning != running)
+            lock (lockObj)
             {
-                // State changed
-                if (Log.Enabled)
-                    Log.WriteLine("Debugger state changed to {0}, 0=running", debugState);
-                CpuRunning = running;
-                if (running == false)
+                var cspect = Main.CSpect;
+                var debugState = cspect.Debugger(Plugin.eDebugCommand.GetState);
+                bool running = (debugState == 0);
+                if (CpuRunning != running)
                 {
-                    DebuggerStopped();
+                    // State changed
+                    if (Log.Enabled)
+                        Log.WriteLine("Debugger state changed to {0}, 0=running", debugState);
+                    CpuRunning = running;
+                    if (running == false)
+                    {
+                        DebuggerStopped();
+                    }
                 }
             }
         }
@@ -426,7 +434,8 @@ namespace DeZogPlugin
                 case 33: regs._HL = (ushort)((regs._HL & 0xFF) + 256 * valueByte); break;  // H'
 
                 default:
-                    // TODO: Error
+                    // Error
+                    Console.WriteLine("Error: Wrong register number {0} to set.", regNumber);
                     break;
             }
 
@@ -521,7 +530,7 @@ namespace DeZogPlugin
                     // Respond
                     CSpectSocket.SendResponse();
                     //ManualBreak = false;
-                    //CpuRunning = true;
+                    //CpuRunning = true; Need to be locked
                     //cspect.Debugger(Plugin.eDebugCommand.StepOver);
                     break;
                     
@@ -765,7 +774,7 @@ namespace DeZogPlugin
          */
         public static void ReadState()
         {
-            // TODO: No CSpect interface yet.
+            // Not implemented: No CSpect interface yet.
 
             // Respond
             CSpectSocket.SendResponse();
@@ -776,10 +785,10 @@ namespace DeZogPlugin
          */
         public static void WriteState()
         {
-            // TODO: No CSpect interface yet.
+            // Not implemented: No CSpect interface yet.
 
             // Respond
-            //CSpectSocket.SendResponse();
+            CSpectSocket.SendResponse();
         }
 
 

@@ -2,6 +2,7 @@
 
 ## 0.9.0
 - DZRP v0.4.0: Changes to CMD_CONTINUE.
+- Lock introduced which seems to solve the "run-away" problem.
 
 ## 0.8.0
 - Fixed a mix of response and notification problem (asynchronous problem)
