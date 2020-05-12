@@ -130,7 +130,7 @@ namespace DeZogPlugin
                 listener.Bind(localEndPoint);
                 listener.Listen(1);
 
-                Log.WriteLine("DeZog plugin: Waiting for a connection on port {0} (localhost)...", Port);
+                Log.WriteLine("Waiting for a connection on port {0} (localhost)...", Port);
 
                 // Start an asynchronous socket to listen for connections.  
                 listener.BeginAccept(new AsyncCallback(AcceptCallback), listener);

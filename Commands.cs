@@ -95,10 +95,6 @@ namespace DeZogPlugin
             lock (lockObj)
             {
                 var cspect = Main.CSpect;
-                bool dbgVisible = Main.Settings.CSpectDebuggerVisible;
-                if (Log.Enabled)
-                    Log.WriteLine("CSpectDebuggerVisible={0}", dbgVisible);
-                cspect.Debugger(Plugin.eDebugCommand.SetRemote, (dbgVisible) ? 0 : 1);
                 BreakpointMap = new Dictionary<ushort, ushort>();
                 LastBreakpointId = 0;
                 TmpBreakpoint1 = -1;
@@ -144,7 +140,7 @@ namespace DeZogPlugin
          */
         protected static void PrintAllBpWp()
         {
-            Console.WriteLine("PrintAllBpWp");
+            Log.WriteLine("PrintAllBpWp");
             var cspect = Main.CSpect;
             for (int addr = 0; addr < 0x10000; addr++)
             {
@@ -153,14 +149,14 @@ namespace DeZogPlugin
                 var wpw = cspect.Debugger(Plugin.eDebugCommand.GetWriteBreakpoint, addr);
                 if ((bp | wpr | wpw) != 0)
                 {
-                    Console.Write("  Address 0x{0:X4}:", addr);
+                    Log.Write("  Address 0x{0:X4}:", addr);
                     if (bp != 0)
-                        Console.Write(" [Breakpoint]");
+                        Log.Write(" [Breakpoint]");
                     if (wpr != 0)
-                        Console.Write(" [Watchpoint read]");
+                        Log.Write(" [Watchpoint read]");
                     if (wpw != 0)
-                        Console.Write(" [Watchpoint write]");
-                    Console.WriteLine();
+                        Log.Write(" [Watchpoint write]");
+                    Log.WriteLine();
                 }
             }
         }
@@ -373,11 +369,13 @@ namespace DeZogPlugin
             SetDword(regs._AF);
             SetDword(regs._BC);
             SetDword(regs._DE);
-            SetByte(regs.I);
+            SetDword(regs._HL);
             SetByte(regs.R);
+            SetByte(regs.I);
             SetByte(regs.IM);
             SetByte(0);
             CSpectSocket.SendResponse(Data);
+            //Log.WriteLine("GetRegs: I={0}, R={1}", regs.I, regs.R);
         }
 
 
@@ -433,14 +431,18 @@ namespace DeZogPlugin
                 case 32: regs._HL = (ushort)((regs._HL & 0xFF00) + valueByte); break;  // L'
                 case 33: regs._HL = (ushort)((regs._HL & 0xFF) + 256 * valueByte); break;  // H'
 
+                case 34: regs.R = (byte)value; break;
+                case 35: regs.I = (byte)value; break;
+
                 default:
                     // Error
-                    Console.WriteLine("Error: Wrong register number {0} to set.", regNumber);
+                    Log.WriteLine("Error: Wrong register number {0} to set.", regNumber);
                     break;
             }
 
             // Set register(s)
             cspect.SetRegs(regs);
+            //Log.WriteLine("SetRegs: I={0}, R={1}", regs.I, regs.R);
 
             // Respond
             CSpectSocket.SendResponse();
@@ -549,7 +551,7 @@ namespace DeZogPlugin
                         TmpBreakpoint1 = bp1Address;
                         var result = cspect.Debugger(Plugin.eDebugCommand.SetBreakpoint, TmpBreakpoint1);
                         if (Log.Enabled)
-                            Console.WriteLine("  Set tmp breakpoint 1 at 0x{0:X4}, result={1}", TmpBreakpoint1, result);
+                            Log.WriteLine("  Set tmp breakpoint 1 at 0x{0:X4}, result={1}", TmpBreakpoint1, result);
                     }
                     TmpBreakpoint2 = -1;
                     if (bp2Enable)
@@ -557,7 +559,7 @@ namespace DeZogPlugin
                         TmpBreakpoint2 = bp2Address;
                         var result = cspect.Debugger(Plugin.eDebugCommand.SetBreakpoint, TmpBreakpoint2);
                         if (Log.Enabled)
-                            Console.WriteLine("  Set tmp breakpoint 2 at 0x{0:X4}, result={1}", TmpBreakpoint2, result);
+                            Log.WriteLine("  Set tmp breakpoint 2 at 0x{0:X4}, result={1}", TmpBreakpoint2, result);
                     }
 
                     // Log
@@ -666,7 +668,7 @@ namespace DeZogPlugin
                 for (ushort i = start; i != end; i++)
                 {
                     cspect.Debugger(Plugin.eDebugCommand.SetReadBreakpoint, i);
-                    //Console.WriteLine("Read Watchpoint {0}", i);
+                    //Log.WriteLine("Read Watchpoint {0}", i);
                 }
             }
             // Write
@@ -675,7 +677,7 @@ namespace DeZogPlugin
                 for (ushort i = start; i != end; i++)
                 {
                     cspect.Debugger(Plugin.eDebugCommand.SetWriteBreakpoint, i);
-                    //Console.WriteLine("Write Watchpoint {0}", i);
+                    //Log.WriteLine("Write Watchpoint {0}", i);
                 }
             }
             // Respond
@@ -808,7 +810,7 @@ namespace DeZogPlugin
             SetByte(value);
             // Log
             if (Log.Enabled)
-                Log.WriteLine("GetNextRegister({0:X2}):, {1}", reg, value);
+                Log.WriteLine("GetNextRegister({0:X2}): {1}", reg, value);
             // Respond
             CSpectSocket.SendResponse(Data);
         }
@@ -845,7 +847,7 @@ namespace DeZogPlugin
                 SetByte(colorMain);
                 byte color9th = cspect.GetNextRegister(0x44);
                 SetByte(color9th);
-                //Console.WriteLine("Palette index={0}: 8bit={1}, 9th bit={2}", i, colorMain, color9th);
+                //Log.WriteLine("Palette index={0}: 8bit={1}, 9th bit={2}", i, colorMain, color9th);
             }
             // Restore values
             cspect.SetNextRegister(0x43, eUlaCtrlReg);

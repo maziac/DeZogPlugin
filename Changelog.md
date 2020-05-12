@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.0
+- Registers I and R can be changed now.
+- Corrected retrieving of register HL', I, R and IM.
+- 'CSpectDebuggerVisible' setting removed.
+
 ## 0.9.0
 - DZRP v0.4.0: Changes to CMD_CONTINUE.
 - Lock introduced which seems to solve the "run-away" problem.

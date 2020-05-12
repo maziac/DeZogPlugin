@@ -26,7 +26,7 @@ namespace DeZogPlugin
          */
         public List<sIO> Init(iCSpect _CSpect)
         {
-            Console.WriteLine("DeZog plugin (v{0}) started.", typeof(Main).Assembly.GetName().Version);
+            Log.WriteLine("v{0} started.", typeof(Main).Assembly.GetName().Version);
 
             CSpect = _CSpect;
 
@@ -51,7 +51,7 @@ namespace DeZogPlugin
         public void Quit()
         {
             // If the program is stopped the socket is closed anyway.
-            Log.ConsoleWriteLine("DeZog plugin terminated.");
+            Log.WriteLine("Terminated.");
         }
 
 

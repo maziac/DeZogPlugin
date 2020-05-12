@@ -35,6 +35,16 @@ namespace DeZogPlugin
         /// </summary>
         static public bool Enabled = false;
 
+        /// <summary>
+        /// Use this to print in front of each log.
+        /// Is done automatically normally.
+        /// </summary>
+        static public string Prefix = "Dezog Plugin: ";
+
+        /// <summary>
+        /// To decide when to print the Prefix.
+        /// </summary>
+        static private int PrefixColumn = 0;
 
         /**
          * Writes a formatted string.
@@ -42,8 +52,11 @@ namespace DeZogPlugin
          */
         static public void Write(string format, params object[] args)
         {
+            if(PrefixColumn==0)
+                Console.Write(Prefix);
             string text = string.Format(format, args);
             Console.Write(text);
+            PrefixColumn += text.Length;
         }
 
         /**
@@ -52,8 +65,11 @@ namespace DeZogPlugin
          */
         static public void WriteLine(string format, params object[] args)
         {
+            if (PrefixColumn == 0)
+                Console.Write(Prefix);
             string text = string.Format(format, args);
             Console.WriteLine(text);
+            PrefixColumn = 0;
         }
 
         /**
@@ -62,22 +78,9 @@ namespace DeZogPlugin
         static public void WriteLine()
         {
             Console.WriteLine();
+            PrefixColumn = 0;
         }
 
-
-        /// Same as above but make sure that output goes also to console.
-        static public void ConsoleWrite(string format, params object[] args)
-        {
-            Log.Write(format, args);
-        }
-        static public void ConsoleWriteLine(string format, params object[] args)
-        {
-            Log.WriteLine(format, args);
-        }
-        static public void ConsoleWriteLine()
-        {
-            Log.WriteLine();
-        }
     }
 
 }

@@ -21,13 +21,6 @@ namespace DeZogPlugin
 
 
         /**
-         * If the CSpect debugger should be visible on a break.
-         * Useful for debugging this plugin.
-         */
-        public bool CSpectDebuggerVisible { get; set; } = true;  // Default
-
-
-        /**
          * Constructor.
          */
         public Settings()
