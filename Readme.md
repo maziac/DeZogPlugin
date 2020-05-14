@@ -9,11 +9,11 @@ DeZog will connect to this socket when a debug session is started.
 
 # Functionality
 
-The plugin supports DZRP v1.0. With the following functionality:
+The plugin supports DZRP v1.0.0. With the following functionality:
 - Continue/StepInto/StepOver/StepOut
 - Get memory content
 - Get register content
-- Setting breakpoints, watchpoints
+- Setting breakpoints
 - Get sprite patterns and attributes
 
 
@@ -21,7 +21,7 @@ The plugin supports DZRP v1.0. With the following functionality:
 
 The plugin can be compiled with Visual Studio (19). It has been built with VS on a Mac.
 
-You can find precompiled DLLs [here](https://github.com/maziac/DeZogPlugin/releases).
+You can find precompiled DLL [here](https://github.com/maziac/DeZogPlugin/releases).
 
 Place the DeZogPlugin.dll in the root directory of CSpect (i.e. at the same level as the CSpect.exe program).
 Once you start CSpect it will automatically start the plugin.
@@ -34,7 +34,7 @@ Basically you need to create a launch.json with and set the port (if different f
 
 You can start CSpect without any (Z80) program. The program is being transferred by DeZog when the debug session is started.
 
-If you use CSpect under macOs or Linux you need to install Mono.
+If you use CSpect under macOS or Linux you need to install Mono.
 A typical commandline to start CSpect looks like:
 ~~~
 mono CSpect.exe -w4 -zxnext -nextrom -exit -brk -tv
@@ -46,7 +46,7 @@ mono CSpect.exe -w4 -zxnext -nextrom -exit -brk -tv
 If the Plugin.dll changes in a new version of CSpect the DeZog plugin needs to be recompiled.
 Therefore the Plugin.dll needs to be referenced inside the DeZog plugin project.
 In the Cpect directory a link can be made (ln) to the dll, so it is not required each time to copy the dll.
-(Note: macOS link via desktop is not working, use commandline "ln -s".)
+(Note: a macOS link via desktop is not working, use commandline "ln -s".)
 
 ## Release vs. Debug build
 
@@ -68,6 +68,8 @@ Here is an examle DeZogPlugin.dll.config:
     <Port>11000</Port>
 </Settings>
 ~~~
+
+Note: If you use the default port 11000 you can even omit the DeZogPlugin.dll.config file.
 
 
 ## Socket Protocol

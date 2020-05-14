@@ -2,6 +2,7 @@
 
 ## 1.0.0
 - Supports CSpect 2.12.26 ClearAllBreakpoints.
+- Changed to DZRP 1.0.0.
 
 ## 0.10.0
 - Registers I and R can be changed now.

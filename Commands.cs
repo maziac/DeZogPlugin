@@ -30,7 +30,7 @@ namespace DeZogPlugin
      */
     public class Commands
     {
-        protected static byte[] DZRP_VERSION = { 0, 4, 0 };
+        protected static byte[] DZRP_VERSION = { 1, 0, 0 };
 
         /**
          * The break reason.
