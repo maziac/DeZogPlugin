@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.0
+- Supports CSpect 2.12.26 ClearAllBreakpoints.
+
 ## 0.10.0
 - Registers I and R can be changed now.
 - Corrected retrieving of register HL', I, R and IM.

@@ -185,7 +185,7 @@ namespace DeZogPlugin
                 if (start)
                 {
                     // Run
-                   cspect.Debugger(Plugin.eDebugCommand.Run);
+                    cspect.Debugger(Plugin.eDebugCommand.Run);
                 }
                 else
                 {
@@ -328,9 +328,10 @@ namespace DeZogPlugin
         {
             // Clear all breakpoints etc.
             var cspect = Main.CSpect;
+            cspect.Debugger(Plugin.eDebugCommand.ClearAllBreakpoints);
             for (int addr = 0; addr < 0x10000; addr++)
             {
-                cspect.Debugger(Plugin.eDebugCommand.ClearBreakpoint, addr);
+                //cspect.Debugger(Plugin.eDebugCommand.ClearBreakpoint, addr);
                 cspect.Debugger(Plugin.eDebugCommand.ClearReadBreakpoint, addr);
                 cspect.Debugger(Plugin.eDebugCommand.ClearWriteBreakpoint, addr);
             }
