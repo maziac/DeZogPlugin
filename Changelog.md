@@ -1,5 +1,9 @@
 # Changelog
 
+
+## 1.1.0
+- Assembly info updated.
+
 ## 1.0.0
 - Supports CSpect 2.12.26 ClearAllBreakpoints.
 - Changed to DZRP 1.0.0.
