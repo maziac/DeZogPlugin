@@ -260,7 +260,10 @@ namespace DeZogPlugin
                     //    Log.WriteLine("  Data[{0}]={1}", i, state.Data[i]);
                     state.Data.RemoveRange(0, totalLength);
                     if (Log.Enabled)
-                        Log.WriteLine("End of message, Data.Count={0}", state.Data.Count);
+                    {
+                        if(state.Data.Count<20 || state.Data.Count%1000==0)
+                            Log.WriteLine("End of message, Data.Count={0}", state.Data.Count);
+                    }
 
                     // Next
                     len -= totalLength;
@@ -526,7 +529,7 @@ namespace DeZogPlugin
 
 
         /**
-         * Creates a string from dat bytes.
+         * Creates a string from data bytes.
          */
         protected static string GetStringFromData(byte[] data, int start = 0, int count = -1)
         {
@@ -539,8 +542,8 @@ namespace DeZogPlugin
 
             string result = "";
             int printCount = count;
-            if (printCount > 300)
-                printCount = 300;
+            if (printCount > 30)
+                printCount = 30;
             for (int i = 0; i < printCount; i++)
                 result += " " + data[i + start];
             if (printCount != count)
