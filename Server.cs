@@ -152,6 +152,9 @@ namespace DeZogPlugin
             receveivedSeqno = 0;
             Commands.Init();
 
+            // Wait a little bit (for debugger to stop)
+            Thread.Sleep(500);
+
             // Get the socket that handles the client request.  
             Socket listener = (Socket)ar.AsyncState;
             Socket handler = listener.EndAccept(ar);

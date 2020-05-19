@@ -102,6 +102,14 @@ namespace DeZogPlugin
                 // Stop
                 CpuRunning = false;
                 cspect.Debugger(Plugin.eDebugCommand.Enter);
+                // Clear any pending interrupt
+                var regs = cspect.GetRegs();
+                var prevRegs = regs;
+                regs.IFF1 = false;
+                regs.IFF2 = false;
+                cspect.SetRegs(regs);   // This seems to clear a pending interrupt
+                // Restore original value
+                cspect.SetRegs(prevRegs);
             }
         }
 
@@ -165,6 +173,7 @@ namespace DeZogPlugin
         /**
          * Start/stop debugger.
          */
+         // TODO start=false not used.
         protected static void StartCpu(bool start)
         {
 
@@ -179,28 +188,175 @@ namespace DeZogPlugin
                 // Is required. Otherwise a stop could be missed because the tick is called only
                 // every 20ms. If start/stop happens within this timeframe it would not be recognized.
                 //CpuRunning = start;
-                // Start/stop
+
+                // Get previous debug state
                 var cspect = Main.CSpect;
+                var prevDbgState = cspect.Debugger(Plugin.eDebugCommand.GetState);  // 0 = runnning
+                bool prevRunning = (prevDbgState == 0);
+
+               // Loop and wait until executed
+                if (start != prevRunning)
+                {
+                    var dbgCommand = (start) ? Plugin.eDebugCommand.Run : Plugin.eDebugCommand.Enter;
+                    while (true)
+                    {
+                        // Run or stop
+                        cspect.Debugger(dbgCommand);
+                        // Check if done
+                        var debugState = cspect.Debugger(Plugin.eDebugCommand.GetState);
+                        bool running = (debugState == 0);
+                        if (start == running)
+                            break;
+                        // Else wait a little bit
+                        Thread.Sleep(1);    // in ms
+                    }
+                    // If changed to 'stop' then check the breakpoints
+                    if (!start)
+                    {
+                        CheckIfBreakpointHit();
+                    }
+                }
+
+                // Start/stop
                 CpuRunning = start;
-                if (start)
-                {
-                    // Run
-                    cspect.Debugger(Plugin.eDebugCommand.Run);
-                }
-                else
-                {
-                    // Stop
-                    cspect.Debugger(Plugin.eDebugCommand.Enter);
-                }
             }
         }
 
 
         /**
+         * Checks if registers have changed.
+         * Not all registers are tested.
+         * Only R and PC.
+         */
+        protected static bool RegsChanged(Plugin.Z80Regs r1, Plugin.Z80Regs r2)
+        {
+            return (r1.PC != r2.PC) || (r1.R != r2.R);
+        }
+
+
+        /**
+         * Used to execute an action but make sure that the CPU is stopped before.
+         * If the CPU was running before it will be restarted.
+         * If breakpoints are found on stop a notification will be sent.
+         */
+        public static void ExecuteStopped(Action action)
+        {
+            // The lock is required, otherwise CpuRunning can be set here and the Tick() jumps in
+            // between "CpuRunning = true/false" and "eDebugCommand.Run/Enter"
+            lock (lockObj)
+            {
+                // Is required. Otherwise a stop could be missed because the tick is called only
+                // every 20ms. If start/stop happens within this timeframe it would not be recognized.
+                //CpuRunning = start;
+
+                // Get previous debug state
+                var cspect = Main.CSpect;
+                var prevDbgState = cspect.Debugger(Plugin.eDebugCommand.GetState);  // 0 = runnning
+                bool prevRunning = (prevDbgState == 0);
+
+                // Loop and wait until executed
+                if (prevRunning)
+                {
+                    var dbgCommand = Plugin.eDebugCommand.Enter;
+                    var prevRegs = cspect.GetRegs();
+                    while (true)
+                    {
+                        // Run or stop
+                        cspect.Debugger(dbgCommand);
+                        // Wait a little bit
+                        Thread.Sleep(1);    // in ms  // DOES NOT WORK: If I wait too long in this function CSpect behaves oddly. E.g. changes memory, restarts Z80, ...
+                        // Checks registers
+                        var curRegs = cspect.GetRegs();
+                        if (!RegsChanged(prevRegs, curRegs)) {
+                            // Check if done
+                            var debugState = cspect.Debugger(Plugin.eDebugCommand.GetState);
+                            bool running = (debugState == 0);
+                            if (!running)
+                                break;
+                        }
+                        prevRegs = curRegs;
+                    }
+                }
+
+                // Execute the action
+                action();
+
+                // If previously running get back to the old state
+                if (prevRunning)
+                {
+                    // If changed to 'stop' then check the breakpoints
+                    CheckIfBreakpointHit(false);
+                    // Restart
+                    var dbgCommand = Plugin.eDebugCommand.Run;
+                    while (true)
+                    {
+                        // Run or stop
+                        cspect.Debugger(dbgCommand);
+                        // Check if done
+                        var debugState = cspect.Debugger(Plugin.eDebugCommand.GetState);
+                        bool running = (debugState == 0);
+                        if (running)
+                            break;
+                        // Else wait a little bit
+                        Thread.Sleep(1);    // in ms
+                    }
+                }
+            }
+        }
+
+
+        //static bool run = false;
+        //static Plugin.Z80Regs prevRegs = Main.CSpect.GetRegs();
+        //static int prevMem = 0;
+        //static int counter = 0;
+        //static System.Diagnostics.Stopwatch stopwatch;
+        /**
          * Called on every tick.
+         * Every 20ms.
          */
         public static void Tick()
         {
+            /*
+            var cspect = Main.CSpect;
+            var curRegs = cspect.GetRegs();
+            if(!run)
+            {
+                // Compare
+                if (prevRegs.PC != curRegs.PC || prevRegs.R != curRegs.R )
+                {
+                    Log.WriteLine("prevPC={0}/0x{0:X4}, prevR={1}, curPC={2}/0x{2:X4}, curR={3}", prevRegs.PC, prevRegs.R, curRegs.PC, curRegs.R);
+                    Log.WriteLine("prevSP={0}/0x{0:X4}, curSP={1}/0x{1:X4}", prevRegs.SP, curRegs.SP);
+                    byte[] spCont = cspect.Peek((ushort)(curRegs.SP - 2), 2);
+                    int mem = spCont[0] + 256 * spCont[1];
+                    Log.WriteLine("prevMem={0}/0x{0:X4}, (curSP-2)={1}/0x{1:X4}", prevMem, prevMem, mem, mem);
+                    Log.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                }
+            }
+            prevRegs = curRegs;
+            byte[] prevCont = cspect.Peek(curRegs.SP, 2);
+            prevMem = prevCont[0] + 256 * prevCont[1];
+
+            run = !run;
+            var dbgCommand = (run) ? Plugin.eDebugCommand.Run : Plugin.eDebugCommand.Enter;
+            cspect.Debugger(dbgCommand);
+            */
+
+            /*
+            counter++;
+            if (counter == 1)
+            {
+                stopwatch = new System.Diagnostics.Stopwatch();
+                stopwatch.Start();
+            }
+            if (counter == 1000)
+            {
+                stopwatch.Stop();              
+                Console.WriteLine("RunTime: " + stopwatch.ElapsedMilliseconds);
+                counter = 0;
+            }
+            */
+
+            
             // Return if not initialized
             if (BreakpointMap == null)
                 return;
@@ -217,20 +373,26 @@ namespace DeZogPlugin
                     if (Log.Enabled)
                         Log.WriteLine("Debugger state changed to {0}, 0=running", debugState);
                     CpuRunning = running;
-                    if (running == false)
+                    if (!running)
                     {
-                        DebuggerStopped();
+                        CheckIfBreakpointHit();
                     }
                 }
             }
+            
+            
         }
 
 
         /**
          * Called when the debugger stopped.
          * E.g. because a breakpoint was hit.
+         * @param sendNtfIfNoReason If no reason is found a notification (with "manual break") is sent
+         * if true.
+         * The notification is not sent if false. In that case a notification is only sent if a reason
+         * is found.
          */
-        protected static void DebuggerStopped()
+        protected static void CheckIfBreakpointHit(bool sendNtfIfNoReason=true)
         {
             // Get PC
             var cspect = Main.CSpect;
@@ -291,8 +453,12 @@ namespace DeZogPlugin
                     }
                 }
             }
+
             // Send break notification
-            SendPauseNotification(reason, bpAddress, reasonString);
+            if(sendNtfIfNoReason || reason!=BreakReason.MANUAL_BREAK)
+            {
+                SendPauseNotification(reason, bpAddress, reasonString);
+            }
 
             // "Undefine" temporary breakpoints
             TmpBreakpoint1 = -1;
@@ -896,22 +1062,33 @@ namespace DeZogPlugin
          */
         public static void GetSpritePatterns()
         {
-            // Start of memory
-            ushort index = CSpectSocket.GetDataByte();
-            // Get size
-            ushort count = CSpectSocket.GetDataByte();
-            if (Log.Enabled)
-                Log.WriteLine("Sprite pattern index={0}, count={1}", index, count);
+            //ExecuteStopped(() =>
+            {
+                var cspect = Main.CSpect;
+                var prevRegs = cspect.GetRegs();
 
-            // Respond
-            int address = index * 256;
-            int size = count * 256;
-            InitData(size);
-            var cspect = Main.CSpect;
-            byte[] values = cspect.PeekSprite(address, size);
-            foreach(byte value in values)
-                SetByte(value);
-            CSpectSocket.SendResponse(Data);
+                // Start of memory
+                ushort index = CSpectSocket.GetDataByte();
+                // Get size
+                ushort count = CSpectSocket.GetDataByte();
+                if (Log.Enabled)
+                    Log.WriteLine("Sprite pattern index={0}, count={1}", index, count);
+
+                // Respond
+                int address = index * 256;
+                int size = count * 256;
+                InitData(size);
+                byte[] values = cspect.PeekSprite(address, size);
+                foreach (byte value in values)
+                    SetByte(value);
+                CSpectSocket.SendResponse(Data);
+
+                var afterRegs = cspect.GetRegs();
+                Log.WriteLine("prevPC={0}/(0x{0:X4}), afterPC={1}/(0x{1:X4})", prevRegs.PC, afterRegs.PC);
+                if (prevRegs.PC != afterRegs.PC)
+                    Log.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+
+            }//);
         }
 
 
