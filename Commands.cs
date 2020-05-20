@@ -30,7 +30,7 @@ namespace DeZogPlugin
      */
     public class Commands
     {
-        protected static byte[] DZRP_VERSION = { 1, 0, 0 };
+        protected static byte[] DZRP_VERSION = { 1, 1, 0 };
 
         /**
          * The break reason.
@@ -488,8 +488,27 @@ namespace DeZogPlugin
 
 
         /**
-         * Clears all break- and watchpoints.
+         * Copies a buffer to the Data array.
          */
+        protected static void SetBuffer(byte[] buffer)
+        {
+            foreach (var value in buffer)
+                Data[Index++] = value;
+        }
+
+        /**
+         * Copies a string (including terminating 0) into the Data array.
+         */
+        protected static void SetString(string text)
+        {
+            foreach (var value in text)
+                Data[Index++] = (byte)value;
+        }
+
+
+        /**
+        * Clears all break- and watchpoints.
+        */
         protected static void ClearAllBreakAndWatchpoints()
         {
             // Clear all breakpoints etc.
@@ -511,8 +530,13 @@ namespace DeZogPlugin
         {
             // Clear breakpoints
             ClearAllBreakAndWatchpoints();
-            // Return configuration
-            CSpectSocket.SendResponse(DZRP_VERSION);
+            // Return values
+            int length = 1 + 3 + Main.ProgramName.Length + 1;
+            InitData(length);
+            SetByte(0);   // no error
+            SetBuffer(DZRP_VERSION);
+            SetString(Main.ProgramName);
+            CSpectSocket.SendResponse(Data);
         }
 
 

@@ -4,6 +4,8 @@
 ## 1.1.0
 - Assembly info updated.
 - Clear any pending interrupt at startup.
+- Changed to DZRP 1.1.0.
+
 
 ## 1.0.0
 - Supports CSpect 2.12.26 ClearAllBreakpoints.

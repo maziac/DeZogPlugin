@@ -16,6 +16,7 @@ namespace DeZogPlugin
     public class Main : iPlugin
     {
 
+        public static string ProgramName;
         public static iCSpect CSpect;
         public static Settings Settings;
 
@@ -26,7 +27,10 @@ namespace DeZogPlugin
          */
         public List<sIO> Init(iCSpect _CSpect)
         {
-            Log.WriteLine("v{0} started.", typeof(Main).Assembly.GetName().Version);
+            string version = typeof(Main).Assembly.GetName().Version.ToString();
+            ProgramName = typeof(Main).Assembly.GetName().Name;
+            ProgramName += " v" + version;
+            Log.WriteLine("v{0} started.", version);
 
             CSpect = _CSpect;
 
