@@ -1,6 +1,10 @@
 # Changelog
 
 
+## 1.2.0
+- Changed to DZRP 1.2.0: CMD_SET_SLOT.
+- Experimental message parsing of GetSpritePatterns in Tick().
+
 ## 1.1.0
 - Assembly info updated.
 - Clear any pending interrupt at startup.

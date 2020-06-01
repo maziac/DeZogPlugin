@@ -43,6 +43,8 @@ namespace DeZogPlugin
         CMD_GET_SPRITE_CLIP_WINDOW_AND_CONTROL = 0x14,
 
         CMD_SET_BORDER = 0x15,
+
+        CMD_SET_SLOT = 0x16,
     }
 
 
@@ -389,6 +391,10 @@ namespace DeZogPlugin
 
                 case DZRP.CMD_SET_BORDER:
                     Commands.SetBorder();
+                    break;
+
+                case DZRP.CMD_SET_SLOT:
+                    Commands.SetSlot();
                     break;
 
                 default:

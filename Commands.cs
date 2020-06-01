@@ -30,7 +30,7 @@ namespace DeZogPlugin
      */
     public class Commands
     {
-        protected static byte[] DZRP_VERSION = { 1, 1, 0 };
+        protected static byte[] DZRP_VERSION = { 1, 2, 0 };
 
         /**
          * The break reason.
@@ -86,6 +86,7 @@ namespace DeZogPlugin
         // Stores if a PAUSE command has been sent.
         protected static bool ManualBreak = false;
 
+        protected static bool DoGetPatternsInTick = false;
 
         /**
          * General initalization function.
@@ -379,7 +380,14 @@ namespace DeZogPlugin
                     }
                 }
             }
-            
+
+            // !!!!!!!! TODO: Doing the message parsing in the Tick routine helps, but I need to do this for all messages
+            // and need a clever way to do consecutive messages (I can't wait 20 ms on each message).
+            if(DoGetPatternsInTick)
+            {
+                GetSpritePatternsInTick();
+                DoGetPatternsInTick = false;
+            }
             
         }
 
@@ -962,6 +970,33 @@ namespace DeZogPlugin
         }
 
 
+
+        /**
+         * Associate a slot with a bank.
+         */
+        public static void SetSlot()
+        {
+            // Get slot
+            byte slot = CSpectSocket.GetDataByte();
+            // Get bank
+            byte bank = CSpectSocket.GetDataByte();
+            // Special handling for 0xFE
+            if (bank == 0xFE)
+                bank = 0xFF;
+
+            // Set slot
+            var cspect = Main.CSpect;
+            cspect.SetNextRegister((byte)(0x50 + slot), bank);
+            Console.WriteLine("slot {0} = {1}", slot, bank);
+
+            // No error
+            InitData(1);
+            SetByte(0);
+            // Respond
+            CSpectSocket.SendResponse(Data);
+        }
+
+
         /**
          * Returns the state.
          */
@@ -1086,8 +1121,13 @@ namespace DeZogPlugin
          */
         public static void GetSpritePatterns()
         {
-            //ExecuteStopped(() =>
+            DoGetPatternsInTick = true;
+        }
+
+        public static void GetSpritePatternsInTick()
             {
+                //ExecuteStopped(() =>
+                {
                 var cspect = Main.CSpect;
                 var prevRegs = cspect.GetRegs();
 
@@ -1108,10 +1148,12 @@ namespace DeZogPlugin
                 CSpectSocket.SendResponse(Data);
 
                 var afterRegs = cspect.GetRegs();
-                Log.WriteLine("prevPC={0}/(0x{0:X4}), afterPC={1}/(0x{1:X4})", prevRegs.PC, afterRegs.PC);
+                //Log.WriteLine("prevPC={0}/(0x{0:X4}), afterPC={1}/(0x{1:X4})", prevRegs.PC, afterRegs.PC);
                 if (prevRegs.PC != afterRegs.PC)
+                {
+                    Log.WriteLine("prevPC={0}/(0x{0:X4}), afterPC={1}/(0x{1:X4})", prevRegs.PC, afterRegs.PC);
                     Log.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-
+                }
             }//);
         }
 
