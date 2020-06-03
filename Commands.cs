@@ -987,7 +987,7 @@ namespace DeZogPlugin
             // Set slot
             var cspect = Main.CSpect;
             cspect.SetNextRegister((byte)(0x50 + slot), bank);
-            Console.WriteLine("slot {0} = {1}", slot, bank);
+            //Console.WriteLine("slot {0} = {1}", slot, bank);
 
             // No error
             InitData(1);

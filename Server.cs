@@ -104,7 +104,7 @@ namespace DeZogPlugin
         protected const int HEADER_CMD_SEQNO_LENGTH = 2;
 
         // Stores the received sequence number.
-        protected static byte receveivedSeqno = 0;
+        protected static byte receivedSeqno = 0;
         
 
         /**
@@ -151,7 +151,7 @@ namespace DeZogPlugin
         {
             // Init
             DzrpData = new List<byte>();
-            receveivedSeqno = 0;
+            receivedSeqno = 0;
             Commands.Init();
 
             // Wait a little bit (for debugger to stop)
@@ -185,7 +185,7 @@ namespace DeZogPlugin
             try
             {
                 // Retrieve the state object and the handler socket  
-                if (receveivedSeqno != 0)
+                if (receivedSeqno != 0)
                 {
                     // If this happens a response has not been sent for the previous message.
                     throw new Exception("Message received before command last response was sent.");
@@ -301,7 +301,7 @@ namespace DeZogPlugin
             DzrpData = new List<byte>();
             int startIndex = HEADER_LEN_LENGTH + HEADER_CMD_SEQNO_LENGTH;
             DzrpData.AddRange(data.GetRange(startIndex, data.Count - startIndex));
-            receveivedSeqno = data[HEADER_LEN_LENGTH];
+            receivedSeqno = data[HEADER_LEN_LENGTH];
 
             // Interprete
             DZRP command = (DZRP)data[HEADER_LEN_LENGTH + 1];
@@ -488,10 +488,10 @@ namespace DeZogPlugin
             wrapBuffer[1] = (byte)((length >> 8) & 0xFF);
             wrapBuffer[2] = (byte)((length >> 16) & 0xFF);
             wrapBuffer[3] = (byte)(length >> 24);
-            wrapBuffer[4] = receveivedSeqno;
+            wrapBuffer[4] = receivedSeqno;
             if(byteData!=null)
                 byteData.CopyTo(wrapBuffer, HEADER_LEN_LENGTH + 1);
-            receveivedSeqno = 0;    // Ready for next message.
+            receivedSeqno = 0;    // Ready for next message.
             // Begin sending the data to the remote device.
             Send(wrapBuffer);
         }
