@@ -1,9 +1,13 @@
 # Changelog
 
 
+## 1.3.0
+- Changed to DZRP 1.4.0: Command numbers changed.
+
 ## 1.2.0
 - Changed to DZRP 1.2.0: CMD_SET_SLOT.
 - Experimental message parsing of GetSpritePatterns in Tick().
+- Optimized GetSpritesClipWindow
 
 ## 1.1.0
 - Assembly info updated.

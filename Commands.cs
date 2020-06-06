@@ -30,7 +30,7 @@ namespace DeZogPlugin
      */
     public class Commands
     {
-        protected static byte[] DZRP_VERSION = { 1, 2, 0 };
+        protected static byte[] DZRP_VERSION = { 1, 4, 0 };
 
         /**
          * The break reason.
@@ -1168,23 +1168,16 @@ namespace DeZogPlugin
             int prevIndex = cspect.GetNextRegister(0x1C);
             prevIndex = (prevIndex >> 2) & 0x03;
             // Get clip window
-            cspect.SetNextRegister(0x1C, 0x02);
             byte[] clip = new byte[5];
-            clip[0] = cspect.GetNextRegister(0x19); // xl
-            cspect.SetNextRegister(0x19, clip[0]);  // Increment index
-            clip[1] = cspect.GetNextRegister(0x19); // xr
-            cspect.SetNextRegister(0x19, clip[1]);  // Increment index
-            clip[2] = cspect.GetNextRegister(0x19); // yt
-            cspect.SetNextRegister(0x19, clip[2]);  // Increment index
-            clip[3] = cspect.GetNextRegister(0x19); // yb
+            for (int i = 0; i < 4; i++)
+            {
+                byte value = cspect.GetNextRegister(0x19); // xl
+                clip[(prevIndex + i) % 4] = value;
+                cspect.SetNextRegister(0x19, value);  // Increment index
+            }
             clip[4] = cspect.GetNextRegister(0x15); // sprite control register
-            //cspect.SetNextRegister(0x19, clip[3]);  // Increment index.
             if (Log.Enabled)
                 Log.WriteLine("Clip: xl={0}, xr={1}, yt={2}, yb={3}, control={4:X2}", clip[0], clip[1], clip[2], clip[3], clip[4]);
-            // Restore
-            cspect.SetNextRegister(0x1C, 0x02); // reset
-            for(int i=0; i<prevIndex;i++)
-                cspect.SetNextRegister(0x19, clip[i]);   // Increase index
             // Respond
             CSpectSocket.SendResponse(clip);
         }

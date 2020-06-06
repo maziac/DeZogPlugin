@@ -14,37 +14,42 @@ namespace DeZogPlugin
 
     // The command enums.    
     public enum DZRP {
-        CMD_INIT=1,
-	    CMD_GET_REGISTERS=2,
-	    CMD_SET_REGISTER=3,
-	    CMD_WRITE_BANK=4,
-	    CMD_CONTINUE=5,
-	    CMD_PAUSE=6,
+        // ZXNext: All Commands available in ZXNext (need to be consecutive)
+        CMD_INIT = 1,
+        CMD_GET_REGISTERS = 2,
+        CMD_SET_REGISTER = 3,
+        CMD_WRITE_BANK = 4,
+        CMD_CONTINUE = 5,
+        CMD_PAUSE = 6,
+        CMD_READ_MEM = 7,
+        CMD_WRITE_MEM = 8,
+        CMD_GET_SLOTS = 9,
+        CMD_SET_SLOT = 10,
+        CMD_GET_TBBLUE_REG = 11,
 
-	    CMD_ADD_BREAKPOINT=7,
-	    CMD_REMOVE_BREAKPOINT=8,
+        CMD_SET_BORDER = 12,
 
-	    CMD_ADD_WATCHPOINT=9,
-	    CMD_REMOVE_WATCHPOINT=0xA,
+        CMD_SET_BREAKPOINTS = 13,
+        CMD_RESTORE_MEM = 14,
 
-	    CMD_READ_MEM=0xB,
-	    CMD_WRITE_MEM=0xC,
+        CMD_GET_SPRITES_PALETTE = 15,
+        CMD_GET_SPRITES_CLIP_WINDOW_AND_CONTROL = 16,
 
-        CMD_GET_SLOTS = 0xD,
+        // Sprites
+        CMD_GET_SPRITES = 30,
+        CMD_GET_SPRITE_PATTERNS = 31,
 
-        CMD_READ_STATE = 0xE,
-        CMD_WRITE_STATE = 0xF,
+        // Breakpoint
+        CMD_ADD_BREAKPOINT = 40,
+        CMD_REMOVE_BREAKPOINT = 41,
 
-        CMD_GET_TBBLUE_REG = 0x10,
+        CMD_ADD_WATCHPOINT = 42,
+        CMD_REMOVE_WATCHPOINT = 43,
 
-        CMD_GET_SPRITES_PALETTE = 0x11,
-        CMD_GET_SPRITES = 0x12,
-        CMD_GET_SPRITE_PATTERNS = 0x13,
-        CMD_GET_SPRITE_CLIP_WINDOW_AND_CONTROL = 0x14,
+        // State
+        CMD_READ_STATE = 50,
+        CMD_WRITE_STATE = 51,
 
-        CMD_SET_BORDER = 0x15,
-
-        CMD_SET_SLOT = 0x16,
     }
 
 
@@ -331,6 +336,48 @@ namespace DeZogPlugin
                     Commands.Pause();
                     break;
 
+                case DZRP.CMD_READ_MEM:
+                    Commands.ReadMem();
+                    break;
+
+                case DZRP.CMD_WRITE_MEM:
+                    Commands.WriteMem();
+                    break;
+
+                case DZRP.CMD_GET_SLOTS:
+                    Commands.GetSlots();
+                    break;
+
+                case DZRP.CMD_SET_SLOT:
+                    Commands.SetSlot();
+                    break;
+
+                case DZRP.CMD_GET_TBBLUE_REG:
+                    Commands.GetTbblueReg();
+                    break;
+
+                case DZRP.CMD_SET_BORDER:
+                    Commands.SetBorder();
+                    break;
+
+
+                case DZRP.CMD_GET_SPRITES_PALETTE:
+                    Commands.GetSpritesPalette();
+                    break;
+
+                case DZRP.CMD_GET_SPRITES_CLIP_WINDOW_AND_CONTROL:
+                    Commands.GetSpritesClipWindow();
+                    break;
+
+                case DZRP.CMD_GET_SPRITES:
+                    Commands.GetSprites();
+                    break;
+
+                case DZRP.CMD_GET_SPRITE_PATTERNS:
+                    Commands.GetSpritePatterns();
+                    break;
+
+
                 case DZRP.CMD_ADD_BREAKPOINT:
                     Commands.AddBreakpoint();
                     break;
@@ -347,17 +394,6 @@ namespace DeZogPlugin
                     Commands.RemoveWatchpoint();
                     break;
 
-                case DZRP.CMD_READ_MEM:
-                    Commands.ReadMem();
-                    break;
-
-                case DZRP.CMD_WRITE_MEM:
-                    Commands.WriteMem();
-                    break;
-
-                case DZRP.CMD_GET_SLOTS:
-                    Commands.GetSlots();
-                    break;
 
                 case DZRP.CMD_READ_STATE:
                     Commands.ReadState();
@@ -365,36 +401,6 @@ namespace DeZogPlugin
 
                 case DZRP.CMD_WRITE_STATE:
                     Commands.WriteState();
-                    break;
-
-
-                case DZRP.CMD_GET_TBBLUE_REG:
-                    Commands.GetTbblueReg();
-                    break;
-
-
-                case DZRP.CMD_GET_SPRITES_PALETTE:
-                    Commands.GetSpritesPalette();
-                    break;
-
-                case DZRP.CMD_GET_SPRITES:
-                    Commands.GetSprites();
-                    break;
-
-                case DZRP.CMD_GET_SPRITE_PATTERNS:
-                    Commands.GetSpritePatterns();
-                    break;
-
-                case DZRP.CMD_GET_SPRITE_CLIP_WINDOW_AND_CONTROL:
-                    Commands.GetSpritesClipWindow();
-                    break;
-
-                case DZRP.CMD_SET_BORDER:
-                    Commands.SetBorder();
-                    break;
-
-                case DZRP.CMD_SET_SLOT:
-                    Commands.SetSlot();
                     break;
 
                 default:
