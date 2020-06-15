@@ -30,7 +30,7 @@ namespace DeZogPlugin
      */
     public class Commands
     {
-        protected static byte[] DZRP_VERSION = { 1, 4, 0 };
+        protected static byte[] DZRP_VERSION = { 1, 6, 0 };
 
         /**
          * The break reason.
@@ -548,6 +548,16 @@ namespace DeZogPlugin
         }
 
 
+
+        /**
+         * Just sends a response.
+         */
+        public static void CmdClose()
+        {
+            CSpectSocket.SendResponse();
+        }
+
+
         /**
          * Returns the registers.
          */
@@ -917,7 +927,7 @@ namespace DeZogPlugin
             // Get size
             ushort size = CSpectSocket.GetDataWord();
             if (Log.Enabled)
-                Log.WriteLine("address={0}, size={1}", address, size);
+                Log.WriteLine("ReadMem at address={0}, size={1}", address, size);
 
             // Respond
             InitData(size);

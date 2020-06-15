@@ -1,8 +1,13 @@
 # Changelog
 
 
+## 1.4.0
+- Changed to DZRP 1.6.0: CMD_CLOSE and changed command numbers.
+- Switched to CSpect 2.12.30
+
 ## 1.3.0
 - Changed to DZRP 1.4.0: Command numbers changed.
+- Switched to CSpect 2.12.29
 
 ## 1.2.0
 - Changed to DZRP 1.2.0: CMD_SET_SLOT.
