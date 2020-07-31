@@ -86,7 +86,6 @@ namespace DeZogPlugin
         // Stores if a PAUSE command has been sent.
         protected static bool ManualBreak = false;
 
-        protected static bool DoGetPatternsInTick = false;
 
         /**
          * General initalization function.
@@ -173,8 +172,8 @@ namespace DeZogPlugin
 
         /**
          * Start/stop debugger.
+         * @param start Starts the CPU if true (currently this is the only operation mode)
          */
-         // TODO start=false not used.
         protected static void StartCpu(bool start)
         {
 
@@ -380,15 +379,6 @@ namespace DeZogPlugin
                     }
                 }
             }
-
-            // !!!!!!!! TODO: Doing the message parsing in the Tick routine helps, but I need to do this for all messages
-            // and need a clever way to do consecutive messages (I can't wait 20 ms on each message).
-            if(DoGetPatternsInTick)
-            {
-                GetSpritePatternsInTick();
-                DoGetPatternsInTick = false;
-            }
-            
         }
 
 
@@ -1131,40 +1121,31 @@ namespace DeZogPlugin
          */
         public static void GetSpritePatterns()
         {
-            DoGetPatternsInTick = true;
-        }
+            var cspect = Main.CSpect;
+            var prevRegs = cspect.GetRegs();
 
-        public static void GetSpritePatternsInTick()
+            // Start of memory
+            ushort index = CSpectSocket.GetDataByte();
+            // Get size
+            ushort count = CSpectSocket.GetDataByte();
+            if (Log.Enabled)
+                Log.WriteLine("Sprite pattern index={0}, count={1}", index, count);
+
+            // Respond
+            int address = index * 256;
+            int size = count * 256;
+            InitData(size);
+            byte[] values = cspect.PeekSprite(address, size);
+            foreach (byte value in values)
+                SetByte(value);
+            CSpectSocket.SendResponse(Data);
+
+            var afterRegs = cspect.GetRegs();
+            //Log.WriteLine("prevPC={0}/(0x{0:X4}), afterPC={1}/(0x{1:X4})", prevRegs.PC, afterRegs.PC);
+            if (prevRegs.PC != afterRegs.PC)
             {
-                //ExecuteStopped(() =>
-                {
-                var cspect = Main.CSpect;
-                var prevRegs = cspect.GetRegs();
-
-                // Start of memory
-                ushort index = CSpectSocket.GetDataByte();
-                // Get size
-                ushort count = CSpectSocket.GetDataByte();
-                if (Log.Enabled)
-                    Log.WriteLine("Sprite pattern index={0}, count={1}", index, count);
-
-                // Respond
-                int address = index * 256;
-                int size = count * 256;
-                InitData(size);
-                byte[] values = cspect.PeekSprite(address, size);
-                foreach (byte value in values)
-                    SetByte(value);
-                CSpectSocket.SendResponse(Data);
-
-                var afterRegs = cspect.GetRegs();
-                //Log.WriteLine("prevPC={0}/(0x{0:X4}), afterPC={1}/(0x{1:X4})", prevRegs.PC, afterRegs.PC);
-                if (prevRegs.PC != afterRegs.PC)
-                {
-                    Log.WriteLine("prevPC={0}/(0x{0:X4}), afterPC={1}/(0x{1:X4})", prevRegs.PC, afterRegs.PC);
-                    Log.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                }
-            }//);
+                Log.WriteLine("prevPC={0}/(0x{0:X4}), afterPC={1}/(0x{1:X4})", prevRegs.PC, afterRegs.PC);
+            }
         }
 
 
