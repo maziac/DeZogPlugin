@@ -57,6 +57,9 @@
     <None Include="DeZogPlugin.dll.config" />
     <None Include="Changelog.md" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Releases\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>
