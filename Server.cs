@@ -59,6 +59,19 @@ namespace DeZogPlugin
     }
 
 
+    /**
+     * Defines the machine type that is returned in CMD_INIT.
+     * It is required to determine the memory model.
+     */
+    public enum DzrpMachineType
+    {
+        ZX16K = 1,
+        ZX48K = 2,
+        ZX128K = 3,
+        ZXNEXT = 4
+    }
+
+
     // State object for reading client data asynchronously  
     public class StateObject
     {
@@ -437,7 +450,7 @@ namespace DeZogPlugin
 
         /**
          * Used to retrieve one element from the buffer.
-         * Returns the data or -1 if no data available.
+         * Returns the data or throws an exception if no data available.
          */
         public static byte GetDataByte()
         {
@@ -456,7 +469,7 @@ namespace DeZogPlugin
 
         /**
          * Used to retrieve 2 elements (a word) from the buffer.
-         * Returns the data or -1 if no data available.
+         * Returns the data or throws an exception if no data available.
          */
         public static ushort GetDataWord()
         {
@@ -475,12 +488,54 @@ namespace DeZogPlugin
 
 
         /**
+         * Used to retrieve 3 elements (a long address) from the buffer.
+         * Returns the data or throws an exception if no data available.
+         * Already checks if the address is long or 64k and returns the
+         * adjusted address.
+         */
+        public static int GetLongAddress()
+        {
+            // Check if data available
+            int count = DzrpData.Count;
+            if (count < 3)
+                throw new Exception("GetLongAddress: no data");
+            // Get value
+            int address = (int)(CSpectSocket.DzrpData[0] + 256 * CSpectSocket.DzrpData[1]);
+            int bank = (int)CSpectSocket.DzrpData[2];
+            // Adjust address
+            if (bank > 0)
+            {
+                // Address contains banking information, adjust it
+                bank--;
+            }
+            // construct address
+            int adjustedAddress = (bank << 16) + address;
+            // Remove it from fifo
+            DzrpData.RemoveAt(0);
+            DzrpData.RemoveAt(0);
+            DzrpData.RemoveAt(0);
+            // Return
+            return adjustedAddress;
+        }
+
+
+        /**
           * Returns the data buffer.
           */
         public static List<byte> GetRemainingData()
         {
             // Return
             return DzrpData;
+        }
+
+
+        /**
+          * Returns the remaining data length.
+          */
+        public static int GetRemainingDataCount()
+        {
+            // Return
+            return DzrpData.Count;
         }
 
 

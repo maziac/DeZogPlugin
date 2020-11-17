@@ -30,7 +30,8 @@ namespace DeZogPlugin
             string version = typeof(Main).Assembly.GetName().Version.ToString();
             ProgramName = typeof(Main).Assembly.GetName().Name;
             ProgramName += " v" + version;
-            Log.WriteLine("v{0} started.", version);
+            string dzrpVersion = Commands.GetDzrpVersion();
+            Log.WriteLine("v{0} started. DZRP v{1}.", version, dzrpVersion);
 
             CSpect = _CSpect;
 
