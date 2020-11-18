@@ -502,12 +502,6 @@ namespace DeZogPlugin
             // Get value
             int address = (int)(CSpectSocket.DzrpData[0] + 256 * CSpectSocket.DzrpData[1]);
             int bank = (int)CSpectSocket.DzrpData[2];
-            // Adjust address
-            if (bank > 0)
-            {
-                // Address contains banking information, adjust it
-                bank--;
-            }
             // construct address
             int adjustedAddress = (bank << 16) + address;
             // Remove it from fifo

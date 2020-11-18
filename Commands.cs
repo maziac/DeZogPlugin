@@ -408,9 +408,10 @@ namespace DeZogPlugin
             var pc = regs.PC;
             byte slot = (byte)(pc >> 13);
             int bank = cspect.GetNextRegister((byte)(0x50 + slot));
+            //Log.WriteLine("Debugger stopped: bank {0}, slot {1}", bank, slot);
             int pcLong = ((bank+1)<<16) + pc;
             if (Log.Enabled)   
-                Log.WriteLine("Debugger stopped at 0x{0:X4} (long address=0x{0:X6}", pc, pcLong);
+                Log.WriteLine("Debugger stopped at 0x{0:X4} (long address=0x{1:X6})", pc, pcLong);
 
             // Disable temporary breakpoints (64k addresses)
             if (TmpBreakpoint1 >= 0)
@@ -718,19 +719,22 @@ namespace DeZogPlugin
          */
         protected static ushort SetBreakpoint(int address)
         {
+            //address &= 0xFFFF;
             // Set in CSpect
             byte bank = (byte)(address >> 16);
             if(bank>0)
             {
                 // Adjust physical address
-                address = (address & 0x1FFF) + ((bank - 1) << 13);
+                int physAddress = (address & 0x1FFF) + ((bank - 1) << 13);
                 Main.CSpect.Debugger(Plugin.eDebugCommand.SetPhysicalBreakpoint, address);
+                Log.WriteLine("  Set breakpoint " + (address & 0xFFFF) + " bank=" + (bank - 1));
+                Log.WriteLine("  Phys. breakpoint " + physAddress);
             }
             else
             {
                 // Use 64k address
                 /// TODO
-                //  Main.CSpect.Debugger(Plugin.eDebugCommand.SetBreakpoint, address);
+                Main.CSpect.Debugger(Plugin.eDebugCommand.SetBreakpoint, address);
 
             }
             // Add to array (ID = element position + 1)
@@ -752,6 +756,7 @@ namespace DeZogPlugin
                 // Clear in CSpect (only if last breakpoint with that address)
                 if (!BreakpointMap.ContainsValue(address))
                 {
+                    //address &= 0xFFFF;
                     byte bank = (byte)(address >> 16);
                     if (bank > 0)
                     {
@@ -763,7 +768,7 @@ namespace DeZogPlugin
                     {
                         // Use 64k address
                         /// TODO
-                        //  Main.CSpect.Debugger(Plugin.eDebugCommand.ClearBreakpoint, address);
+                        Main.CSpect.Debugger(Plugin.eDebugCommand.ClearBreakpoint, address);
 
                     }
                 }
@@ -1269,7 +1274,7 @@ namespace DeZogPlugin
             int stringLen = reasonBytes.Length;
 
             // Prepare data
-            int length = 5+stringLen;
+            int length = 6+stringLen;
             byte[] dataWoString =
             {
                 // Length
