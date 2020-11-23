@@ -589,7 +589,7 @@ namespace DeZogPlugin
             // Get registers
             var cspect = Main.CSpect;
             var regs = cspect.GetRegs();
-            InitData(28+8);
+            InitData(29+8);
             // Return registers
             SetWord(regs.PC);
             SetWord(regs.SP);
@@ -606,6 +606,7 @@ namespace DeZogPlugin
             SetByte(regs.R);
             SetByte(regs.I);
             SetByte(regs.IM);
+            SetByte(0);     // reserved
             // Return the slots/banks
             SetByte(8);
             for (int i = 0; i < 8; i++)
