@@ -1048,26 +1048,6 @@ namespace DeZogPlugin
 
 
         /**
-         * Returns the 8 slots.
-         */
-        // TODO: REMOVE
-        public static void GetSlots()
-        {
-            // Read slots
-            InitData(8);
-            var cspect = Main.CSpect;
-            for (int i = 0; i < 8; i++)
-            {
-                byte bank = cspect.GetNextRegister((byte)(0x50 + i));
-                SetByte(bank);
-            }
-            // Respond
-            CSpectSocket.SendResponse(Data);
-        }
-
-
-
-        /**
          * Associate a slot with a bank.
          */
         public static void SetSlot()

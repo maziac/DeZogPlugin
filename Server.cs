@@ -16,8 +16,8 @@ namespace DeZogPlugin
     public enum DZRP {
         // ZXNext: All Commands available in ZXNext (need to be consecutive)
         CMD_INIT = 1,
-
         CMD_CLOSE = 2,
+
         CMD_GET_REGISTERS = 3,
         CMD_SET_REGISTER = 4,
         CMD_WRITE_BANK = 5,
@@ -25,19 +25,18 @@ namespace DeZogPlugin
         CMD_PAUSE = 7,
         CMD_READ_MEM = 8,
         CMD_WRITE_MEM = 9,
-        CMD_GET_SLOTS = 10,
-        CMD_SET_SLOT = 11,
-        CMD_GET_TBBLUE_REG = 12,
-        CMD_SET_BORDER = 13,
-        CMD_SET_BREAKPOINTS = 14,
-        CMD_RESTORE_MEM = 15,
-        CMD_LOOPBACK = 16,
-        CMD_GET_SPRITES_PALETTE = 17,
-        CMD_GET_SPRITES_CLIP_WINDOW_AND_CONTROL = 18,
+        CMD_SET_SLOT = 10,
+        CMD_GET_TBBLUE_REG = 11,
+        CMD_SET_BORDER = 12,
+        CMD_SET_BREAKPOINTS = 13,
+        CMD_RESTORE_MEM = 14,
+        CMD_LOOPBACK = 15,
+        CMD_GET_SPRITES_PALETTE = 16,
+        CMD_GET_SPRITES_CLIP_WINDOW_AND_CONTROL = 17,
 
         // Sprites
-        CMD_GET_SPRITES = 19,
-        CMD_GET_SPRITE_PATTERNS = 20,
+        CMD_GET_SPRITES = 18,
+        CMD_GET_SPRITE_PATTERNS = 19,
 
         // Breakpoint
         CMD_ADD_BREAKPOINT = 40,
@@ -351,10 +350,6 @@ namespace DeZogPlugin
 
                 case DZRP.CMD_WRITE_MEM:
                     Commands.WriteMem();
-                    break;
-
-                case DZRP.CMD_GET_SLOTS:
-                    Commands.GetSlots();
                     break;
 
                 case DZRP.CMD_SET_SLOT:
