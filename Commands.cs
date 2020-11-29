@@ -452,9 +452,7 @@ namespace DeZogPlugin
                 bpAddress = pcLong;
             }
             // Check for breakpoint
-            //else if (BreakpointMap.ContainsValue(pcLong))
-            // TODO: Change if phys breakpoint bug is corrected in cspect:
-            else if (BreakpointMap.ContainsValue(pcLong&0xFFFF))
+            else if (BreakpointMap.ContainsValue(pcLong))
             {
                 // Breakpoint hit
                 reason = BreakReason.BREAKPOINT_HIT;
@@ -738,8 +736,8 @@ namespace DeZogPlugin
          */
         protected static ushort SetBreakpoint(int address)
         {
-            Log.WriteLine("  SetBreakpoint: 0x{0:X6}", address);
-            //address &= 0xFFFF;
+            if (Log.Enabled)
+                Log.WriteLine("  SetBreakpoint: 0x{0:X6}", address);
             // Set in CSpect
             byte bank = (byte)(address >> 16);
             if(bank>0)
@@ -747,14 +745,15 @@ namespace DeZogPlugin
                 // Adjust physical address
                 int physAddress = (address & 0x1FFF) + ((bank - 1) << 13);
                 Main.CSpect.Debugger(Plugin.eDebugCommand.SetPhysicalBreakpoint, physAddress);
-                Log.WriteLine("  Phys. breakpoint 0x{0:X6}", physAddress);
+                if(Log.Enabled)
+                    Log.WriteLine("  Phys. breakpoint 0x{0:X6}", physAddress);
             }
             else
             {
                 // Use 64k address
-                /// TODO
                 Main.CSpect.Debugger(Plugin.eDebugCommand.SetBreakpoint, address);
-                Log.WriteLine("  Normal breakpoint 0x{0:X4}", address);
+                if (Log.Enabled)
+                    Log.WriteLine("  Normal breakpoint 0x{0:X4}", address);
             }
             // Add to array (ID = element position + 1)
             BreakpointMap.Add(++LastBreakpointId, address);
@@ -775,7 +774,6 @@ namespace DeZogPlugin
                 // Clear in CSpect (only if last breakpoint with that address)
                 if (!BreakpointMap.ContainsValue(address))
                 {
-                    //address &= 0xFFFF;
                     byte bank = (byte)(address >> 16);
                     if (bank > 0)
                     {
@@ -786,7 +784,6 @@ namespace DeZogPlugin
                     else
                     {
                         // Use 64k address
-                        /// TODO
                         Main.CSpect.Debugger(Plugin.eDebugCommand.ClearBreakpoint, address);
 
                     }
@@ -861,9 +858,6 @@ namespace DeZogPlugin
                     // Respond
                     CSpectSocket.SendResponse();
 
-                    // TODO: REMOVE
-                    //Main.CSpect.Debugger(Plugin.eDebugCommand.SetPhysicalBreakpoint, 0x026002);
-
                     // Run
                     ManualBreak = false;
                     StartCpu(true);
@@ -913,9 +907,6 @@ namespace DeZogPlugin
         {
             // Get breakpoint address
             int bpAddr = CSpectSocket.GetLongAddress();
-
-            // TODO: Up to CSpect v.37 there is a bug in the physical breakpoints, so we use 64k breakpoints instead.
-            bpAddr &= 0xFFFF;
 
             // Set CSpect breakpoint
             ushort bpId = SetBreakpoint(bpAddr);
