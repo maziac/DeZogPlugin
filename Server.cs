@@ -245,29 +245,22 @@ namespace DeZogPlugin
                     if (state.MsgLength == 0)
                     {
                         // Check if header is complete
-                        if (len >= HEADER_LEN_LENGTH)
+                        if (len >= HEADER_LEN_LENGTH+HEADER_CMD_SEQNO_LENGTH)
                         {
                             // Header received -> Decode length
                             int length = state.Data[0];
                             length += state.Data[1] << 8;
                             length += state.Data[2] << 16;
                             length += state.Data[3] << 24;
-                            if (length < HEADER_CMD_SEQNO_LENGTH)
-                            {
-                                // Wrong length detected
-                                state.error = true;
-                                if (Log.Enabled)
-                                    Log.WriteLine("Length too short ({0}). Stopping communication. Please reconnect.", length);
-                                handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
-                                return;
-                            }
+                            //for (int i = 0;i< 6;i++)
+                            //    Log.WriteLine("Received Data[{0}]={1}", i, state.Data[i]);
                             if (Log.Enabled)
                                 Log.WriteLine("Received Length={0}", length);
                             state.MsgLength = length;
                         }
                     }
 
-                    int totalLength = HEADER_LEN_LENGTH + state.MsgLength;
+                    int totalLength = HEADER_LEN_LENGTH + HEADER_CMD_SEQNO_LENGTH + state.MsgLength;
                     //Log.WriteLine("state.MsgLength={0}, totalLength={1}", state.MsgLength, totalLength);
                     if (len < totalLength)
                         break;
