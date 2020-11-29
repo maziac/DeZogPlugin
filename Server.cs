@@ -16,8 +16,8 @@ namespace DeZogPlugin
     public enum DZRP {
         // ZXNext: All Commands available in ZXNext (need to be consecutive)
         CMD_INIT = 1,
-
         CMD_CLOSE = 2,
+
         CMD_GET_REGISTERS = 3,
         CMD_SET_REGISTER = 4,
         CMD_WRITE_BANK = 5,
@@ -25,19 +25,18 @@ namespace DeZogPlugin
         CMD_PAUSE = 7,
         CMD_READ_MEM = 8,
         CMD_WRITE_MEM = 9,
-        CMD_GET_SLOTS = 10,
-        CMD_SET_SLOT = 11,
-        CMD_GET_TBBLUE_REG = 12,
-        CMD_SET_BORDER = 13,
-        CMD_SET_BREAKPOINTS = 14,
-        CMD_RESTORE_MEM = 15,
-        CMD_LOOPBACK = 16,
-        CMD_GET_SPRITES_PALETTE = 17,
-        CMD_GET_SPRITES_CLIP_WINDOW_AND_CONTROL = 18,
+        CMD_SET_SLOT = 10,
+        CMD_GET_TBBLUE_REG = 11,
+        CMD_SET_BORDER = 12,
+        CMD_SET_BREAKPOINTS = 13,
+        CMD_RESTORE_MEM = 14,
+        CMD_LOOPBACK = 15,
+        CMD_GET_SPRITES_PALETTE = 16,
+        CMD_GET_SPRITES_CLIP_WINDOW_AND_CONTROL = 17,
 
         // Sprites
-        CMD_GET_SPRITES = 19,
-        CMD_GET_SPRITE_PATTERNS = 20,
+        CMD_GET_SPRITES = 18,
+        CMD_GET_SPRITE_PATTERNS = 19,
 
         // Breakpoint
         CMD_ADD_BREAKPOINT = 40,
@@ -56,6 +55,19 @@ namespace DeZogPlugin
     public enum DZRP_NTF
     {
         NTF_PAUSE = 1
+    }
+
+
+    /**
+     * Defines the machine type that is returned in CMD_INIT.
+     * It is required to determine the memory model.
+     */
+    public enum DzrpMachineType
+    {
+        ZX16K = 1,
+        ZX48K = 2,
+        ZX128K = 3,
+        ZXNEXT = 4
     }
 
 
@@ -232,29 +244,22 @@ namespace DeZogPlugin
                     if (state.MsgLength == 0)
                     {
                         // Check if header is complete
-                        if (len >= HEADER_LEN_LENGTH)
+                        if (len >= HEADER_LEN_LENGTH+HEADER_CMD_SEQNO_LENGTH)
                         {
                             // Header received -> Decode length
                             int length = state.Data[0];
                             length += state.Data[1] << 8;
                             length += state.Data[2] << 16;
                             length += state.Data[3] << 24;
-                            if (length < HEADER_CMD_SEQNO_LENGTH)
-                            {
-                                // Wrong length detected
-                                state.error = true;
-                                if (Log.Enabled)
-                                    Log.WriteLine("Length too short ({0}). Stopping communication. Please reconnect.", length);
-                                handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
-                                return;
-                            }
+                            //for (int i = 0;i< 6;i++)
+                            //    Log.WriteLine("Received Data[{0}]={1}", i, state.Data[i]);
                             if (Log.Enabled)
                                 Log.WriteLine("Received Length={0}", length);
                             state.MsgLength = length;
                         }
                     }
 
-                    int totalLength = HEADER_LEN_LENGTH + state.MsgLength;
+                    int totalLength = HEADER_LEN_LENGTH + HEADER_CMD_SEQNO_LENGTH + state.MsgLength;
                     //Log.WriteLine("state.MsgLength={0}, totalLength={1}", state.MsgLength, totalLength);
                     if (len < totalLength)
                         break;
@@ -347,10 +352,6 @@ namespace DeZogPlugin
                     Commands.WriteMem();
                     break;
 
-                case DZRP.CMD_GET_SLOTS:
-                    Commands.GetSlots();
-                    break;
-
                 case DZRP.CMD_SET_SLOT:
                     Commands.SetSlot();
                     break;
@@ -437,7 +438,7 @@ namespace DeZogPlugin
 
         /**
          * Used to retrieve one element from the buffer.
-         * Returns the data or -1 if no data available.
+         * Returns the data or throws an exception if no data available.
          */
         public static byte GetDataByte()
         {
@@ -456,7 +457,7 @@ namespace DeZogPlugin
 
         /**
          * Used to retrieve 2 elements (a word) from the buffer.
-         * Returns the data or -1 if no data available.
+         * Returns the data or throws an exception if no data available.
          */
         public static ushort GetDataWord()
         {
@@ -475,12 +476,48 @@ namespace DeZogPlugin
 
 
         /**
+         * Used to retrieve 3 elements (a long address) from the buffer.
+         * Returns the data or throws an exception if no data available.
+         * Already checks if the address is long or 64k and returns the
+         * adjusted address.
+         */
+        public static int GetLongAddress()
+        {
+            // Check if data available
+            int count = DzrpData.Count;
+            if (count < 3)
+                throw new Exception("GetLongAddress: no data");
+            // Get value
+            int address = (int)(CSpectSocket.DzrpData[0] + 256 * CSpectSocket.DzrpData[1]);
+            int bank = (int)CSpectSocket.DzrpData[2];
+            // construct address
+            int adjustedAddress = (bank << 16) + address;
+            // Remove it from fifo
+            DzrpData.RemoveAt(0);
+            DzrpData.RemoveAt(0);
+            DzrpData.RemoveAt(0);
+            // Return
+            return adjustedAddress;
+        }
+
+
+        /**
           * Returns the data buffer.
           */
         public static List<byte> GetRemainingData()
         {
             // Return
             return DzrpData;
+        }
+
+
+        /**
+          * Returns the remaining data length.
+          */
+        public static int GetRemainingDataCount()
+        {
+            // Return
+            return DzrpData.Count;
         }
 
 

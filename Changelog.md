@@ -1,6 +1,13 @@
 # Changelog
 
 
+
+## 2.0.0
+- Support for DZRP 2.0.0 (long addresses)
+- Output of DZRP version at the start of the DLL.
+- Switched to CSpect 2.12.37
+- Corrected length while receiving.
+
 ## 1.5.0
 - Removed 'DoGetPatternsInTick'
 - Switched to CSpect 2.12.34

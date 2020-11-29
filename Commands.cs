@@ -30,7 +30,7 @@ namespace DeZogPlugin
      */
     public class Commands
     {
-        protected static byte[] DZRP_VERSION = { 1, 6, 0 };
+        protected static byte[] DZRP_VERSION = { 2, 0, 0 };
 
         /**
          * The break reason.
@@ -72,7 +72,7 @@ namespace DeZogPlugin
 
         // The breakpoint map to keep the IDs and addresses.
         // If it is null then the connection is not active.
-        protected static Dictionary<ushort,ushort> BreakpointMap = null;
+        protected static Dictionary<ushort,int> BreakpointMap = null;
 
         // The last breakpoint ID used.
         protected static ushort LastBreakpointId;
@@ -95,7 +95,7 @@ namespace DeZogPlugin
             lock (lockObj)
             {
                 var cspect = Main.CSpect;
-                BreakpointMap = new Dictionary<ushort, ushort>();
+                BreakpointMap = new Dictionary<ushort, int>();
                 LastBreakpointId = 0;
                 TmpBreakpoint1 = -1;
                 TmpBreakpoint2 = -1;
@@ -140,6 +140,16 @@ namespace DeZogPlugin
         {
             Index = 0;
             Data = new byte[size];
+        }
+
+
+        /**
+         * Returns the DZRP version as a string.
+         */
+        public static string GetDzrpVersion()
+        {
+            string version = "" + DZRP_VERSION[0] + '.' + DZRP_VERSION[1] + '.' + DZRP_VERSION[2];
+            return version;
         }
 
 
@@ -220,6 +230,22 @@ namespace DeZogPlugin
                 // Start/stop
                 CpuRunning = start;
             }
+        }
+
+
+        /**
+         * Returns address as string.
+         * If it is a long address than together with bank information.
+         * E.g. "0x35F6" or 0x35F6 @bank9"
+         */
+        protected static string GetAddressString(int address)
+        {
+            int addr = address & 0xFFFF;
+            string addrString = string.Format("0x{0:X4}", addr);
+            byte bank = (byte)(address >> 16);
+            if(bank>0)
+                addrString += " @bank" + (bank - 1);
+            return addrString;
         }
 
 
@@ -396,10 +422,14 @@ namespace DeZogPlugin
             var cspect = Main.CSpect;
             var regs = cspect.GetRegs();
             var pc = regs.PC;
-            if (Log.Enabled)
-                Log.WriteLine("Debugger stopped at 0x{0:X4}", pc);
+            byte slot = (byte)(pc >> 13);
+            int bank = cspect.GetNextRegister((byte)(0x50 + slot));
+            //Log.WriteLine("Debugger stopped: bank {0}, slot {1}", bank, slot);
+            int pcLong = ((bank+1)<<16) + pc;
+            if (Log.Enabled)   
+                Log.WriteLine("Debugger stopped at 0x{0:X4} (long address=0x{1:X6})", pc, pcLong);
 
-            // Disable temporary breakpoints
+            // Disable temporary breakpoints (64k addresses)
             if (TmpBreakpoint1 >= 0)
             {
                 if(!BreakpointMap.ContainsValue((ushort)TmpBreakpoint1))
@@ -414,19 +444,21 @@ namespace DeZogPlugin
             // Guess break reason
             BreakReason reason = BreakReason.MANUAL_BREAK;
             string reasonString = "";
-            ushort bpAddress = 0;
+            int bpAddress = 0;
             //  First check for temporary breakpoints
             if (pc == TmpBreakpoint1 || pc == TmpBreakpoint2)
             {
                 reason = BreakReason.NO_REASON;
-                bpAddress = pc;
+                bpAddress = pcLong;
             }
             // Check for breakpoint
-            else if (BreakpointMap.ContainsValue(pc))
+            //else if (BreakpointMap.ContainsValue(pcLong))
+            // TODO: Change if phys breakpoint bug is corrected in cspect:
+            else if (BreakpointMap.ContainsValue(pcLong&0xFFFF))
             {
                 // Breakpoint hit
                 reason = BreakReason.BREAKPOINT_HIT;
-                bpAddress = pc;
+                bpAddress = pcLong;
             }
 
             // Note: Watchpoint reasons cannot be safely recognized.
@@ -478,7 +510,7 @@ namespace DeZogPlugin
         /**
          * Sets a dword in the Data array.
          */
-        protected static void SetDword(int value)
+        protected static void SetWord(int value)
         {
             Data[Index++] = (byte)(value & 0xFF);
             Data[Index++] = (byte)(value>>8);
@@ -531,8 +563,9 @@ namespace DeZogPlugin
             // Return values
             int length = 1 + 3 + Main.ProgramName.Length + 1;
             InitData(length);
-            SetByte(0);   // no error
+            SetByte(0);   // No error
             SetBuffer(DZRP_VERSION);
+            SetByte((byte)DzrpMachineType.ZXNEXT);  // machine type = ZXNext
             SetString(Main.ProgramName);
             CSpectSocket.SendResponse(Data);
         }
@@ -554,25 +587,34 @@ namespace DeZogPlugin
         public static void GetRegisters()
         {
             // Get registers
-            var regs = Main.CSpect.GetRegs();
-            InitData(28);
+            var cspect = Main.CSpect;
+            var regs = cspect.GetRegs();
+            InitData(29+8);
             // Return registers
-            SetDword(regs.PC);
-            SetDword(regs.SP);
-            SetDword(regs.AF);
-            SetDword(regs.BC);
-            SetDword(regs.DE);
-            SetDword(regs.HL);
-            SetDword(regs.IX);
-            SetDword(regs.IY);
-            SetDword(regs._AF);
-            SetDword(regs._BC);
-            SetDword(regs._DE);
-            SetDword(regs._HL);
+            SetWord(regs.PC);
+            SetWord(regs.SP);
+            SetWord(regs.AF);
+            SetWord(regs.BC);
+            SetWord(regs.DE);
+            SetWord(regs.HL);
+            SetWord(regs.IX);
+            SetWord(regs.IY);
+            SetWord(regs._AF);
+            SetWord(regs._BC);
+            SetWord(regs._DE);
+            SetWord(regs._HL);
             SetByte(regs.R);
             SetByte(regs.I);
             SetByte(regs.IM);
-            SetByte(0);
+            SetByte(0);     // reserved
+            // Return the slots/banks
+            SetByte(8);
+            for (int i = 0; i < 8; i++)
+            {
+                byte bank = cspect.GetNextRegister((byte)(0x50 + i));
+                SetByte(bank);
+            }
+            // Return
             CSpectSocket.SendResponse(Data);
             //Log.WriteLine("GetRegs: I={0}, R={1}", regs.I, regs.R);
         }
@@ -653,35 +695,67 @@ namespace DeZogPlugin
          */
         public static void WriteBank()
         {
+            // Get size
+            int bankSize = CSpectSocket.GetRemainingDataCount()-1;
+            if(bankSize!=0x2000)
+            {
+                // Only supported is 0x2000
+                string errorString = "Bank size incorrect!";
+                int length = 1 + errorString.Length + 1;
+                InitData(length);
+                SetByte(1);   // Error
+                SetString(errorString);
+                CSpectSocket.SendResponse(Data);
+            }
+
             // Get bank number
             byte bankNumber = CSpectSocket.GetDataByte();
             // Calculate physical address
             // Example: phys. address $1f021 = ($1f021&$1fff) for offset and ($1f021>>13) for bank.
-            Int32 physAddress = bankNumber * 0x2000;
+            Int32 physAddress = bankNumber * bankSize;
             // Write memory
             var cspect = Main.CSpect;
             if (Log.Enabled)
                 Log.WriteLine("WriteBank: bank={0}", bankNumber);
-            for (int i = 0x2000; i > 0; i--)
+            for (int i = bankSize; i > 0; i--)
             {
                 byte value = CSpectSocket.GetDataByte();
                 cspect.PokePhysical(physAddress++, new byte[] {value});
             }
-            
-            // Respond
-            CSpectSocket.SendResponse();
 
+            // Respond
+            InitData(2);
+            SetByte(0);   // No error
+            SetByte(0);
+            CSpectSocket.SendResponse(Data);
         }
 
 
 
         /**
          * Sets a breakpoint and returns an ID (!=0).
+         * The address is the physical address.
          */
-        protected static ushort SetBreakpoint(ushort address)
+        protected static ushort SetBreakpoint(int address)
         {
+            Log.WriteLine("  SetBreakpoint: 0x{0:X6}", address);
+            //address &= 0xFFFF;
             // Set in CSpect
-            Main.CSpect.Debugger(Plugin.eDebugCommand.SetBreakpoint, address);
+            byte bank = (byte)(address >> 16);
+            if(bank>0)
+            {
+                // Adjust physical address
+                int physAddress = (address & 0x1FFF) + ((bank - 1) << 13);
+                Main.CSpect.Debugger(Plugin.eDebugCommand.SetPhysicalBreakpoint, physAddress);
+                Log.WriteLine("  Phys. breakpoint 0x{0:X6}", physAddress);
+            }
+            else
+            {
+                // Use 64k address
+                /// TODO
+                Main.CSpect.Debugger(Plugin.eDebugCommand.SetBreakpoint, address);
+                Log.WriteLine("  Normal breakpoint 0x{0:X4}", address);
+            }
             // Add to array (ID = element position + 1)
             BreakpointMap.Add(++LastBreakpointId, address);
             return LastBreakpointId;
@@ -694,13 +768,29 @@ namespace DeZogPlugin
         protected static void DeleteBreakpoint(ushort bpId)
         {
             // Remove
-            ushort address;
+            int address;
             if (BreakpointMap.TryGetValue(bpId, out address))
             {
                 BreakpointMap.Remove(bpId);
                 // Clear in CSpect (only if last breakpoint with that address)
-                if(!BreakpointMap.ContainsValue(address))
-                    Main.CSpect.Debugger(Plugin.eDebugCommand.ClearBreakpoint, address);
+                if (!BreakpointMap.ContainsValue(address))
+                {
+                    //address &= 0xFFFF;
+                    byte bank = (byte)(address >> 16);
+                    if (bank > 0)
+                    {
+                        // Adjust physical address
+                        address = (address & 0x1FFF) + ((bank - 1) << 13);
+                        Main.CSpect.Debugger(Plugin.eDebugCommand.ClearPhysicalBreakpoint, address);
+                    }
+                    else
+                    {
+                        // Use 64k address
+                        /// TODO
+                        Main.CSpect.Debugger(Plugin.eDebugCommand.ClearBreakpoint, address);
+
+                    }
+                }
             }
         }
 
@@ -771,6 +861,9 @@ namespace DeZogPlugin
                     // Respond
                     CSpectSocket.SendResponse();
 
+                    // TODO: REMOVE
+                    //Main.CSpect.Debugger(Plugin.eDebugCommand.SetPhysicalBreakpoint, 0x026002);
+
                     // Run
                     ManualBreak = false;
                     StartCpu(true);
@@ -819,16 +912,18 @@ namespace DeZogPlugin
         public static void AddBreakpoint()
         {
             // Get breakpoint address
-            ushort bpAddr = CSpectSocket.GetDataWord();
+            int bpAddr = CSpectSocket.GetLongAddress();
+
+            // TODO: Up to CSpect v.37 there is a bug in the physical breakpoints, so we use 64k breakpoints instead.
+            bpAddr &= 0xFFFF;
 
             // Set CSpect breakpoint
             ushort bpId = SetBreakpoint(bpAddr);
 
             // Respond
             InitData(2);
-            SetDword(bpId);
+            SetWord(bpId);
             CSpectSocket.SendResponse(Data);
-
         }
 
 
@@ -950,25 +1045,6 @@ namespace DeZogPlugin
             // Respond
             CSpectSocket.SendResponse();
         }
-
-
-        /**
-         * Returns the 8 slots.
-         */
-        public static void GetSlots()
-        {
-            // Read slots
-            InitData(8);
-            var cspect = Main.CSpect;
-            for (int i = 0; i < 8; i++)
-            {
-                byte bank = cspect.GetNextRegister((byte)(0x50 + i));
-                SetByte(bank);
-            }
-            // Respond
-            CSpectSocket.SendResponse(Data);
-        }
-
 
 
         /**
@@ -1193,16 +1269,18 @@ namespace DeZogPlugin
 
         /**
          * Sends the pause notification.
+         * bpAddress is a long address.
          */
-        protected static void SendPauseNotification(BreakReason reason, ushort bpAddress, string reasonString)
+        protected static void SendPauseNotification(BreakReason reason, int bpAddress, string reasonString)
         {
-            // Convert strign to byte array
+            Log.WriteLine("SendPauseNotification: reason={0}, bpAddress=0x{1:X6}, reasonString='{2}'", reason, bpAddress, reasonString);
+            // Convert string to byte array
             System.Text.ASCIIEncoding enc = new System.Text.ASCIIEncoding();
             byte[] reasonBytes = enc.GetBytes(reasonString+"\0");
             int stringLen = reasonBytes.Length;
 
             // Prepare data
-            int length = 5+stringLen;
+            int length = 6+stringLen;
             byte[] dataWoString =
             {
                 // Length
@@ -1216,9 +1294,10 @@ namespace DeZogPlugin
                 (byte)DZRP_NTF.NTF_PAUSE,
                 // Reason
                 (byte)reason,
-                // Breakpoint address
+                // Breakpoint address (long address)
                 (byte)(bpAddress & 0xFF),
                 (byte)((bpAddress >> 8) & 0xFF),
+                (byte)((bpAddress >> 16) & 0xFF),
             };
             int firstLen = dataWoString.Length;
             byte[] data = new byte[firstLen + stringLen];

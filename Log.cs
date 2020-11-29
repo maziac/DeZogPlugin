@@ -33,7 +33,7 @@ namespace DeZogPlugin
         /// <summary>
         ///  Use to enable logging.
         /// </summary>
-        static public bool Enabled = false;
+        static public bool Enabled = true; //false; TODO: REmove
 
         /// <summary>
         /// Use this to print in front of each log.
