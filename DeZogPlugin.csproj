@@ -40,7 +40,6 @@
     <Reference Include="System.Xml" />
     <Reference Include="Plugin">
       <HintPath>..\CSpect2_13_00\Plugin.dll</HintPath>
-      <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>

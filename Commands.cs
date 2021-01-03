@@ -445,17 +445,17 @@ namespace DeZogPlugin
             BreakReason reason = BreakReason.MANUAL_BREAK;
             string reasonString = "";
             int bpAddress = 0;
-            //  First check for temporary breakpoints
-            if (pc == TmpBreakpoint1 || pc == TmpBreakpoint2)
-            {
-                reason = BreakReason.NO_REASON;
-                bpAddress = pcLong;
-            }
-            // Check for breakpoint
-            else if (BreakpointMap.ContainsValue(pcLong))
+            // Check for breakpoints
+            if (BreakpointMap.ContainsValue(pcLong) || BreakpointMap.ContainsValue(pc))
             {
                 // Breakpoint hit
                 reason = BreakReason.BREAKPOINT_HIT;
+                bpAddress = pcLong;
+            }
+            //  Check for temporary breakpoints
+            else if (pc == TmpBreakpoint1 || pc == TmpBreakpoint2)
+            {
+                reason = BreakReason.NO_REASON;
                 bpAddress = pcLong;
             }
 

@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.0.1
+- Print ASSERTION also on stepping.
+
 ## 2.0.0
 - Support for DZRP 2.0.0 (long addresses)
 - Output of DZRP version at the start of the DLL.
