@@ -1,7 +1,7 @@
 # Changelog
 
 ## 2.0.1
-- Print ASSERTION also on stepping.
+- Order of breakpoint evaluation changed.
 
 ## 2.0.0
 - Support for DZRP 2.0.0 (long addresses)
