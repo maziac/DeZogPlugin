@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.0.2
+- Reverted breakpoint evaluation order. Led to the problem that no break was done when stepping over an ASSERT that did not fail.
+
 ## 2.0.1
 - Order of breakpoint evaluation changed.
 

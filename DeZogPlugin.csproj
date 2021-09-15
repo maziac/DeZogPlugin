@@ -39,7 +39,7 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
     <Reference Include="Plugin">
-      <HintPath>..\CSpect2_13_00\Plugin.dll</HintPath>
+      <HintPath>..\CSpect2_14_08\Plugin.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

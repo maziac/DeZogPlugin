@@ -445,17 +445,17 @@ namespace DeZogPlugin
             BreakReason reason = BreakReason.MANUAL_BREAK;
             string reasonString = "";
             int bpAddress = 0;
+            //  Check for temporary breakpoints
+            if (pc == TmpBreakpoint1 || pc == TmpBreakpoint2)
+            {
+                reason = BreakReason.NO_REASON;
+                bpAddress = pcLong;
+            }
             // Check for breakpoints
-            if (BreakpointMap.ContainsValue(pcLong) || BreakpointMap.ContainsValue(pc))
+            else if (BreakpointMap.ContainsValue(pcLong) || BreakpointMap.ContainsValue(pc))
             {
                 // Breakpoint hit
                 reason = BreakReason.BREAKPOINT_HIT;
-                bpAddress = pcLong;
-            }
-            //  Check for temporary breakpoints
-            else if (pc == TmpBreakpoint1 || pc == TmpBreakpoint2)
-            {
-                reason = BreakReason.NO_REASON;
                 bpAddress = pcLong;
             }
 
@@ -869,7 +869,7 @@ namespace DeZogPlugin
         /**
          * Does a Step-Over.
          * Step-over in a loop until PC is out of the given range.
-         * The idea isto step over e.g. a macro which consists of several instructions.
+         * The idea is to step over e.g. a macro which consists of several instructions.
          */
         public static void StepOver(ushort address, ushort endAddress)
         {
@@ -1264,7 +1264,7 @@ namespace DeZogPlugin
          */
         protected static void SendPauseNotification(BreakReason reason, int bpAddress, string reasonString)
         {
-            Log.WriteLine("SendPauseNotification: reason={0}, bpAddress=0x{1:X6}, reasonString='{2}'", reason, bpAddress, reasonString);
+            //Log.WriteLine("SendPauseNotification: reason={0}, bpAddress=0x{1:X6}, reasonString='{2}'", reason, bpAddress, reasonString);
             // Convert string to byte array
             System.Text.ASCIIEncoding enc = new System.Text.ASCIIEncoding();
             byte[] reasonBytes = enc.GetBytes(reasonString+"\0");
