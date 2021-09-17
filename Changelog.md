@@ -1,10 +1,7 @@
 # Changelog
 
-## 2.0.2
-- Reverted breakpoint evaluation order. Led to the problem that no break was done when stepping over an ASSERT that did not fail.
-
 ## 2.0.1
-- Order of breakpoint evaluation changed.
+- Updated reference to CSpect 2.14.8.
 
 ## 2.0.0
 - Support for DZRP 2.0.0 (long addresses)
