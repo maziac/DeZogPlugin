@@ -71,8 +71,7 @@ namespace DeZogPlugin
 
         /**
          * Writes a TX byte (_value).
-         * The bytes are collected until enough (length) data has been received.
-         * If no client is connected nothing happens, the byte is not cached.
+         * Unused.
          */
         public bool Write(eAccess _type, int _port, byte _value)
         {
@@ -83,12 +82,35 @@ namespace DeZogPlugin
         /**
          * Reads the state or reads a byte from the receive fifo.
          * _isvalid is set to true if the returned value could be provided.
+         * Unused.
          */
         public byte Read(eAccess _type, int _port, out bool _isvalid)
         {
             _isvalid = false;
             return 0;
         }
+
+
+        /**
+         * Called whenever a key is pressed.
+         * @param _id The key id.
+         * @returns true if the plugin handled the key.
+         */
+        public bool KeyPressed(int _id)
+        {
+            // Not used
+            return false;
+        }
+
+
+        /**
+         * Called when the machine is reset.
+         */
+        public void Reset()
+        {
+            // Not used
+        }
+
     }
 }
 

@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.1.0
+- Updated reference to CSpect 2.15.1. (increased major number as CSpect increased major number).
+
 ## 2.0.1
 - Updated reference to CSpect 2.14.8.
 
