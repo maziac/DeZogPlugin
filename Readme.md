@@ -1,4 +1,13 @@
-﻿# DeZog CSpect Plugin
+﻿# Important Note
+
+Since some time the DeZogPlugin is now integrated into CSpect.
+The most recent sources are kept in [CSpectPlugins](https://github.com/mikedailly/CSpectPlugins).
+Up to, at least CSpect v2.19.0.3, there have been only cosmetic changes.
+Anyhow please use the CSpectPlugins repo for changes and pull request.
+This repo here is only for reference.
+
+
+# DeZog CSpect Plugin
 
 This Dezog  CSpect Plugin allows to connect [DeZog](https://github.com/maziac/DeZog) with [CSpect](http://www.cspect.org).
 I.e. you can use the DeZog IDE and run/debug your program in CSpect.
