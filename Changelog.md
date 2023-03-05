@@ -1,5 +1,9 @@
 # Changelog
 
+
+## 2.2.0
+- Aligned with https://github.com/mikedailly/CSpectPlugins/tree/main/DeZogPlugin
+
 ## 2.1.0
 - Updated reference to CSpect 2.15.1. (increased major number as CSpect increased major number).
 
