@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using Plugin;
 
 
 /*
@@ -1063,6 +1064,26 @@ namespace DeZogPlugin
             CSpectSocket.SendResponse(Data);
         }
 
+
+        /**
+         * Turns the interrupt on or off.
+         */
+        public static void InterruptOnOff()
+        {
+            // Get enable/disable
+            byte enableValue = CSpectSocket.GetDataByte();
+            bool enableInterrupt = (enableValue != 0);
+
+            // Get regs and set interrupt
+            var cspect = Main.CSpect;
+            var regs = cspect.GetRegs();
+            regs.IFF1 = enableInterrupt;
+            regs.IFF2 = enableInterrupt;
+            cspect.SetRegs(regs);  
+
+            // Respond
+            CSpectSocket.SendResponse();
+        }
 
         /**
          * Returns the state.

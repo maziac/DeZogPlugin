@@ -16,8 +16,8 @@ namespace DeZogPlugin
     public enum DZRP {
         // ZXNext: All Commands available in ZXNext (need to be consecutive)
         CMD_INIT = 1,
-        CMD_CLOSE = 2,
 
+        CMD_CLOSE = 2,
         CMD_GET_REGISTERS = 3,
         CMD_SET_REGISTER = 4,
         CMD_WRITE_BANK = 5,
@@ -37,6 +37,12 @@ namespace DeZogPlugin
         // Sprites
         CMD_GET_SPRITES = 18,
         CMD_GET_SPRITE_PATTERNS = 19,
+
+        // Port and misc
+        CMD_READ_PORT = 20,
+        CMD_WRITE_PORT = 21,
+        CMD_EXEC_ASM = 22,
+        CMD_INTERRUPT_ON_OFF = 23,
 
         // Breakpoint
         CMD_ADD_BREAKPOINT = 40,
@@ -381,6 +387,20 @@ namespace DeZogPlugin
 
                 case DZRP.CMD_GET_SPRITE_PATTERNS:
                     Commands.GetSpritePatterns();
+                    break;
+
+
+                case DZRP.CMD_READ_PORT:
+                    break;
+
+                case DZRP.CMD_WRITE_PORT:
+                    break;
+
+                case DZRP.CMD_EXEC_ASM:
+                    break;
+
+                case DZRP.CMD_INTERRUPT_ON_OFF:
+                    Commands.InterruptOnOff();
                     break;
 
 
