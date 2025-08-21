@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 
- 
+
 /*
  * The used socket protocol is simple. It consists of header and payload.
  *
@@ -181,9 +181,9 @@ namespace DeZogPlugin
 
 
         /**
-            * Start/stop debugger.
-            * @param start Starts the CPU if true (currently this is the only operation mode)
-            */
+        * Start/stop debugger.
+        * @param start Starts the CPU if true (currently this is the only operation mode)
+        */
         protected static void StartCpu(bool start)
         {
 
@@ -376,13 +376,13 @@ namespace DeZogPlugin
             }
             if (counter == 1000)
             {
-                stopwatch.Stop();              
+                stopwatch.Stop();
                 Console.WriteLine("RunTime: " + stopwatch.ElapsedMilliseconds);
                 counter = 0;
             }
             */
 
-            
+
             // Return if not initialized
             if (BreakpointMap == null)
                 return;
@@ -426,7 +426,7 @@ namespace DeZogPlugin
             int bank = cspect.GetNextRegister((byte)(0x50 + slot));
             //Log.WriteLine("Debugger stopped: bank {0}, slot {1}", bank, slot);
             int pcLong = ((bank+1)<<16) + pc;
-            if (Log.Enabled)   
+            if (Log.Enabled)
                 Log.WriteLine("Debugger stopped at 0x{0:X4} (long address=0x{1:X6})", pc, pcLong);
 
             // Disable temporary breakpoints (64k addresses)
@@ -831,7 +831,7 @@ namespace DeZogPlugin
                     //CpuRunning = true; Need to be locked
                     //cspect.Debugger(Plugin.eDebugCommand.StepOver);
                     break;
-                    
+
                 case AlternateCommand.STEP_OUT: // Step out
                     // Respond
                     CSpectSocket.SendResponse();
@@ -1041,7 +1041,7 @@ namespace DeZogPlugin
             var cspect = Main.CSpect;
             byte[] values = data.ToArray();
             cspect.Poke(address, values);
-            
+
             // Respond
             CSpectSocket.SendResponse();
         }
@@ -1137,7 +1137,7 @@ namespace DeZogPlugin
             do
             {
                 // Wait a little bit
-                Thread.Sleep(1);    // ms.  
+                Thread.Sleep(1);    // ms.
                 // Check if done
                 var debugState = cspect.Debugger(Plugin.eDebugCommand.GetState); // 0 = running
                 running = (debugState == 0);
@@ -1151,7 +1151,7 @@ namespace DeZogPlugin
          * Saves and clears the breakpoints.
          * Saves the registers.
          * Saves a piece of data from the memory.
-         * Replaces it with 
+         * Replaces it with
          * - a CALL to an address with the received code
          * - the received code
          * - a RET at the end of the received code
