@@ -1,13 +1,8 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
 using System.Threading;
-using Plugin;
 
-
+ 
 /*
  * The used socket protocol is simple. It consists of header and payload.
  *
@@ -1079,6 +1074,53 @@ namespace DeZogPlugin
 
 
         /**
+         * Reads the value at a port address.
+         */
+        public static void ReadPort()
+        {
+            // Get address
+            ushort address = CSpectSocket.GetDataWord();
+
+            // Get port value
+            var cspect = Main.CSpect;
+            var value = cspect.InPort(address);
+
+            // No error
+            InitData(1);
+            SetByte(value);
+
+            // Respond
+            CSpectSocket.SendResponse(Data);
+
+            if (Log.Enabled)
+                Log.WriteLine("ReadPort at address=0x{0:X4}: 0x{1:X2}", address, value);
+        }
+
+
+        /**
+         * Sets the value at a port address.
+         */
+        public static void WritePort()
+        {
+            // Get address
+            ushort address = CSpectSocket.GetDataWord();
+            // Get value
+            byte value = CSpectSocket.GetDataByte();
+
+            // Set port value
+            var cspect = Main.CSpect;
+            cspect.OutPort(address, value);
+
+            // Respond
+            CSpectSocket.SendResponse();
+
+            if (Log.Enabled)
+                Log.WriteLine("WritePort at address=0x{0:X4}: 0x{1:X2}", address, value);
+        }
+
+
+
+        /**
          * Execute dbugger comamnd (run, enter (stop), stepOver ...)
          * and wait until it finished.
          */
@@ -1120,7 +1162,9 @@ namespace DeZogPlugin
          */
         public static void ExecAsm()
         {
-            Log.WriteLine("ExecAsm entered");
+            if (Log.Enabled)
+                Log.WriteLine("ExecAsm entered");
+
             // Prepare data for the response message
             InitData(9);
 
@@ -1181,18 +1225,21 @@ namespace DeZogPlugin
             cspect.SetRegs(regs);
 
             // Execute object code
-            Log.WriteLine("ExecAsm: before Stepover");
+            if (Log.Enabled)
+                Log.WriteLine("ExecAsm: before Stepover");
 
             // Run
             DbgExec(Plugin.eDebugCommand.StepOver);
 
-            Log.WriteLine("ExecAsm: after Stepover");
+            if (Log.Enabled)
+                Log.WriteLine("ExecAsm: after Stepover");
 
 
             // Save the resulting registers for the response
             var resultRegs = cspect.GetRegs();
 
-            Log.WriteLine(" PC=: 0x{0:X4}:", resultRegs.PC);
+            if (Log.Enabled)
+                Log.WriteLine(" PC=0x{0:X4}", resultRegs.PC);
 
             // Restore memory
             cspect.Poke((ushort)EXEC_ASM_START_ADDR, savedMemory);
@@ -1211,10 +1258,10 @@ namespace DeZogPlugin
             SetWord(resultRegs.DE); // DE
             SetWord(resultRegs.HL); // HL
 
-
             // Respond
             CSpectSocket.SendResponse(Data);
-            Log.WriteLine("ExecAsm left");
+            if (Log.Enabled)
+                Log.WriteLine("ExecAsm left");
         }
 
         /**

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -391,9 +390,11 @@ namespace DeZogPlugin
 
 
                 case DZRP.CMD_READ_PORT:
+                    Commands.ReadPort();
                     break;
 
                 case DZRP.CMD_WRITE_PORT:
+                    Commands.WritePort();
                     break;
 
                 case DZRP.CMD_EXEC_ASM:

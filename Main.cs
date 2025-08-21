@@ -45,7 +45,7 @@ namespace DeZogPlugin
 
             // Read settings file (port)
             Settings = Settings.Load();
-            Log.Enabled = true; // Settings.LogEnabled; //TODO
+            Log.Enabled = Settings.LogEnabled;
 
  
             //Server.Listen(Settings.Port);
