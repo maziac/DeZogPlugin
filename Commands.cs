@@ -31,13 +31,6 @@ namespace DeZogPlugin
      */
     public class Commands
     {
-        protected class BreakpointLists
-        {
-            public List<ushort> exec;
-            public List<ushort> read;
-            public List<ushort> write;
-        }
-
         protected static byte[] DZRP_VERSION = { 2, 0, 0 };
 
         /**
@@ -189,57 +182,6 @@ namespace DeZogPlugin
                     Log.WriteLine();
                 }
             }
-        }
-
-
-        /**
-         * Returns all Breakpoints and watchpoints.
-         */
-        protected static BreakpointLists GetAllBpWp()
-        {
-            List<ushort> bpAddresses = new List<ushort>();
-            List<ushort> wprAddresses = new List<ushort>();
-            List<ushort> wpwAddresses = new List<ushort>();
-            // Check all addresses for breakpoints
-            var cspect = Main.CSpect;
-            for (int addr = 0; addr < 0x10000; addr++)
-            {
-                var bp = cspect.Debugger(Plugin.eDebugCommand.GetBreakpoint, addr);
-                var wpr = cspect.Debugger(Plugin.eDebugCommand.GetReadBreakpoint, addr);
-                var wpw = cspect.Debugger(Plugin.eDebugCommand.GetWriteBreakpoint, addr);
-                if (bp != 0)
-                    bpAddresses.Add((ushort)addr);
-                if (wpr != 0)
-                    wprAddresses.Add((ushort)addr);
-                if (wpw != 0)
-                    wpwAddresses.Add((ushort)addr);
-            }
-
-
-            Log.WriteLine("GetAllBpWp: bpAddresses.Count={0}, wprAddresses.Count={1}, wpwAddresses.Count={2}", bpAddresses.Count, wprAddresses.Count, wpwAddresses.Count);
-
-            return new BreakpointLists
-            {
-                exec = bpAddresses,
-                read = wprAddresses,
-                write = wpwAddresses
-            };
-        }
-
-
-        /**
-         * Returns all Breakpoints and watchpoints.
-         */
-        protected static void SetBpWpLists(BreakpointLists bpLists)
-        {
-            Log.WriteLine("GetAllBpWp: bpLists.exec.Count={0}, bpLists.read.Count={1}, bpLists.write.Count={2}", bpLists.exec.Count, bpLists.read.Count, bpLists.write.Count);
-            var cspect = Main.CSpect;
-            foreach (ushort addr in bpLists.exec)
-                cspect.Debugger(Plugin.eDebugCommand.SetBreakpoint, addr);
-            foreach (ushort addr in bpLists.read)
-                cspect.Debugger(Plugin.eDebugCommand.SetBreakpoint, addr);
-            foreach (ushort addr in bpLists.write)
-                cspect.Debugger(Plugin.eDebugCommand.SetBreakpoint, addr);
         }
 
 
@@ -792,23 +734,22 @@ namespace DeZogPlugin
         }
 
 
-
         /**
-         * Sets a breakpoint and returns an ID (!=0).
+         * Sets a breakpoint without putting it in the map.
          * The address is the physical address.
          */
-        protected static ushort SetBreakpoint(int address)
+        protected static void SetBreakpointRaw(int address)
         {
             if (Log.Enabled)
                 Log.WriteLine("  SetBreakpoint: 0x{0:X6}", address);
             // Set in CSpect
             byte bank = (byte)(address >> 16);
-            if(bank>0)
+            if (bank > 0)
             {
                 // Adjust physical address
                 int physAddress = (address & 0x1FFF) + ((bank - 1) << 13);
                 Main.CSpect.Debugger(Plugin.eDebugCommand.SetPhysicalBreakpoint, physAddress);
-                if(Log.Enabled)
+                if (Log.Enabled)
                     Log.WriteLine("  Phys. breakpoint 0x{0:X6}", physAddress);
             }
             else
@@ -818,6 +759,17 @@ namespace DeZogPlugin
                 if (Log.Enabled)
                     Log.WriteLine("  Normal breakpoint 0x{0:X4}", address);
             }
+        }
+
+
+        /**
+         * Sets a breakpoint and returns an ID (!=0).
+         * The address is the physical address.
+         * Puts the breakpoint additionally in the map.
+         */
+        protected static ushort SetBreakpoint(int address)
+        {
+            SetBreakpointRaw(address);
             // Add to array (ID = element position + 1)
             BreakpointMap.Add(++LastBreakpointId, address);
             return LastBreakpointId;
@@ -1127,6 +1079,32 @@ namespace DeZogPlugin
 
 
         /**
+         * Execute dbugger comamnd (run, enter (stop), stepOver ...)
+         * and wait until it finished.
+         */
+        protected static void DbgExec(Plugin.eDebugCommand dbgCmd)
+        {
+            bool shouldRun = (dbgCmd == Plugin.eDebugCommand.Run);
+            var cspect = Main.CSpect;
+
+            // Debugger execute
+            cspect.Debugger(dbgCmd);
+
+            // Wait until finished
+            bool running;
+            do
+            {
+                // Wait a little bit
+                Thread.Sleep(1);    // ms.  
+                // Check if done
+                var debugState = cspect.Debugger(Plugin.eDebugCommand.GetState); // 0 = running
+                running = (debugState == 0);
+                //Log.WriteLine("DbgExec: debugState={0}", debugState);
+            } while (running != shouldRun);
+        }
+
+
+        /**
          * Executes a short piece of assembler object code.
          * Saves and clears the breakpoints.
          * Saves the registers.
@@ -1148,10 +1126,15 @@ namespace DeZogPlugin
 
             // Get object code
             var code = CSpectSocket.GetRemainingData();
-            // Check if too big
-            if (code.Count > PAYLOAD_EXEC_ASM)
+            // Check state
+            var cspect = Main.CSpect;
+            var debugState = cspect.Debugger(Plugin.eDebugCommand.GetState);
+            bool running = (debugState == 0);
+
+            // Check if too big or running
+            if(code.Count > PAYLOAD_EXEC_ASM || running)
             {
-                // Payload too big, return an error
+                // Payload too bi or debugger not stopped -> return an error
                 SetByte(1); // Error
                 SetWord(0); // AF
                 SetWord(0); // BC
@@ -1162,24 +1145,6 @@ namespace DeZogPlugin
                 return;
             }
 
-            // Get Debugger state
-            var cspect = Main.CSpect;
-            var debugState = cspect.Debugger(Plugin.eDebugCommand.GetState);
-            bool prevDebuggerRunning = (debugState == 0);
-            // Stop debugger if running
-            bool running = prevDebuggerRunning;
-            while (running)
-            {
-                // Stop
-                cspect.Debugger(Plugin.eDebugCommand.Enter);
-                Thread.Sleep(1);    // ms. Wait a little bit       
-                // Check if done
-                debugState = cspect.Debugger(Plugin.eDebugCommand.GetState); // 0 = running
-                running = (debugState == 0);
-            }
-
-            // Save breakpoints
-            var bpLists = GetAllBpWp();
             // Clear all breakpoints
             cspect.Debugger(Plugin.eDebugCommand.ClearAllBreakpoints);
 
@@ -1217,20 +1182,9 @@ namespace DeZogPlugin
 
             // Execute object code
             Log.WriteLine("ExecAsm: before Stepover");
-           
-           // cspect.Debugger(Plugin.eDebugCommand.StepOver);
 
             // Run
-            cspect.Debugger(Plugin.eDebugCommand.StepOver);
-            do
-            {
-                // Wait a little bit
-                Thread.Sleep(1);    // ms. 
-                // Check if done
-                debugState = cspect.Debugger(Plugin.eDebugCommand.GetState); // 0 = running
-                running = (debugState == 0); 
-                Log.WriteLine("ExecAsm: xdebugState={0}", debugState);
-            } while (running);
+            DbgExec(Plugin.eDebugCommand.StepOver);
 
             Log.WriteLine("ExecAsm: after Stepover");
 
@@ -1247,22 +1201,8 @@ namespace DeZogPlugin
             cspect.SetRegs(saveRegs);
 
             // Restore breakpoints
-            SetBpWpLists(bpLists);
-
-            // Restore debugger state
-            if (prevDebuggerRunning)
-            {
-                running = false;
-                while (!running)
-                {
-                    // Run
-                    cspect.Debugger(Plugin.eDebugCommand.Run);
-                    Thread.Sleep(1);    // ms. Wait a little bit       
-                    // Check if done
-                    debugState = cspect.Debugger(Plugin.eDebugCommand.GetState); // 0 = running
-                    running = (debugState == 0);
-                }
-            }
+            foreach(var bp in BreakpointMap)
+                SetBreakpointRaw(bp.Value);
 
             // No error
             SetByte(0);
