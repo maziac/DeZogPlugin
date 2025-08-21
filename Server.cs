@@ -397,6 +397,7 @@ namespace DeZogPlugin
                     break;
 
                 case DZRP.CMD_EXEC_ASM:
+                    Commands.ExecAsm();
                     break;
 
                 case DZRP.CMD_INTERRUPT_ON_OFF:

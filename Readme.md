@@ -9,7 +9,7 @@ This repo here is only for reference.
 
 # DeZog CSpect Plugin
 
-This Dezog  CSpect Plugin allows to connect [DeZog](https://github.com/maziac/DeZog) with [CSpect](http://www.cspect.org).
+This Dezog CSpect Plugin allows to connect [DeZog](https://github.com/maziac/DeZog) with [CSpect](http://www.cspect.org).
 I.e. you can use the DeZog IDE and run/debug your program in CSpect.
 
 This plugin establishes a listening socket.
@@ -23,6 +23,7 @@ The plugin supports DZRP v2.0.0. With the following functionality:
 - Get memory content
 - Get register content
 - Setting breakpoints
+- Setting interrupt enable flag
 - Get sprite patterns and attributes
 
 
