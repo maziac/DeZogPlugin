@@ -945,64 +945,70 @@ namespace DeZogPlugin
         }
 
 
-        /**
-         * Adds a watchpoint area.
-         */
-        public static void AddWatchpoint()
-        {
-            // Get data
-            ushort start = CSpectSocket.GetDataWord();
-            byte bankPlus1 = CSpectSocket.GetDataByte();
-            ushort size = CSpectSocket.GetDataWord();
-            ushort end = (ushort)(start + size);
-            byte access = CSpectSocket.GetDataByte();
-            if (Log.Enabled)
-                Log.WriteLine("AddWatchpoint: address={0:X4}, bankPlus1={1}, size={1}", start, bankPlus1, size);
-            // condition is not used
-            var cspect = Main.CSpect;
-            // Read
-            if ((access & 0x01) != 0)
-            {
-                for (ushort i = start; i != end; i++)
-                {
-                    cspect.Debugger(Plugin.eDebugCommand.SetReadBreakpoint, i);
-                    //Log.WriteLine("Read Watchpoint {0}", i);
-                }
-            }
-            // Write
-            if ((access & 0x02) != 0)
-            {
-                for (ushort i = start; i != end; i++)
-                {
-                    cspect.Debugger(Plugin.eDebugCommand.SetWriteBreakpoint, i);
-                    //Log.WriteLine("Write Watchpoint {0}", i);
-                }
-            }
-            // Respond
-            CSpectSocket.SendResponse();
-        }
+        /** Watchpoints and WPMEM is disabled for CSpect for now.
+         * There is a problem in CSpect: If a read-breakpoint is set it
+         * can happen that the PC is not incremented anymore or that the
+         * ISR routine is entered for every instruction. 
+         * It's not on Mike's priority list, so I disable watchpoints for DeZog here.
+        */
+        ///**
+        // * Adds a watchpoint area.
+        // */
+        //public static void AddWatchpoint()
+        //{
+        //    // Get data
+        //    ushort start = CSpectSocket.GetDataWord();
+        //    byte bankPlus1 = CSpectSocket.GetDataByte();
+        //    ushort size = CSpectSocket.GetDataWord();
+        //    ushort end = (ushort)(start + size);
+        //    byte access = CSpectSocket.GetDataByte();
+        //    if (Log.Enabled)
+        //        Log.WriteLine("AddWatchpoint: address={0:X4}, bankPlus1={1}, size={1}", start, bankPlus1, size);
+        //    // condition is not used
+        //    var cspect = Main.CSpect;
+        //    // Read
+        //    if ((access & 0x01) != 0)
+        //    {
+        //        for (ushort i = start; i != end; i++)
+        //        {
+        //            cspect.Debugger(Plugin.eDebugCommand.SetReadBreakpoint, i);
+        //            //Log.WriteLine("Read Watchpoint {0}", i);
+        //        }
+        //    }
+        //    // Write
+        //    if ((access & 0x02) != 0)
+        //    {
+        //        for (ushort i = start; i != end; i++)
+        //        {
+        //            cspect.Debugger(Plugin.eDebugCommand.SetWriteBreakpoint, i);
+        //            //Log.WriteLine("Write Watchpoint {0}", i);
+        //        }
+        //    }
+        //    // Respond
+        //    CSpectSocket.SendResponse();
+        //}
 
 
-        /**
-         * Removes a watchpoint area.
-         */
-        public static void RemoveWatchpoint()
-        {
-            // Get data
-            ushort start = CSpectSocket.GetDataWord();
-            byte _bankPlus1 = CSpectSocket.GetDataByte();
-            ushort size = CSpectSocket.GetDataWord();
-            ushort end = (ushort)(start + size);
-            var cspect = Main.CSpect;
-            // Remove both read and write
-            for (ushort i = start; i != end; i++)
-            {
-                cspect.Debugger(Plugin.eDebugCommand.ClearReadBreakpoint, i);
-                cspect.Debugger(Plugin.eDebugCommand.ClearWriteBreakpoint, i);
-            }
-            // Respond
-            CSpectSocket.SendResponse();
-        }
+        ///**
+        // * Removes a watchpoint area.
+        // */
+        //public static void RemoveWatchpoint()
+        //{
+        //    // Get data
+        //    ushort start = CSpectSocket.GetDataWord();
+        //    byte _bankPlus1 = CSpectSocket.GetDataByte();
+        //    ushort size = CSpectSocket.GetDataWord();
+        //    ushort end = (ushort)(start + size);
+        //    var cspect = Main.CSpect;
+        //    // Remove both read and write
+        //    for (ushort i = start; i != end; i++)
+        //    {
+        //        cspect.Debugger(Plugin.eDebugCommand.ClearReadBreakpoint, i);
+        //        cspect.Debugger(Plugin.eDebugCommand.ClearWriteBreakpoint, i);
+        //    }
+        //    // Respond
+        //    CSpectSocket.SendResponse();
+        //}
 
 
         /**
@@ -1308,7 +1314,7 @@ namespace DeZogPlugin
             SetByte(0b1111_1111);   // 16-23: CMD_GET_SPRITES_PALETTE - CMD_INTERRUPT_ON_OFF
             SetByte(0b0000_0000);   // 24-31: Nothing
             SetByte(0b0000_0000);   // 32-39: Nothing
-            SetByte(0b0000_1111);   // 40-47: CMD_ADD_BREAKPOINT - CMD_REMOVE_WATCHPOINT
+            SetByte(0b0000_0011);   // 40-47: CMD_ADD_BREAKPOINT - CMD_REMOVE_BREAKPOINT
 
             // Respond
             CSpectSocket.SendResponse(Data);

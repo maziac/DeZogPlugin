@@ -422,13 +422,13 @@ namespace DeZogPlugin
                     Commands.RemoveBreakpoint();
                     break;
 
-                case DZRP.CMD_ADD_WATCHPOINT:   // 42
-                    Commands.AddWatchpoint();
-                    break;
+                //case DZRP.CMD_ADD_WATCHPOINT:   // 42
+                //    Commands.AddWatchpoint();
+                //    break;
 
-                case DZRP.CMD_REMOVE_WATCHPOINT:    // 43
-                    Commands.RemoveWatchpoint();
-                    break;
+                //case DZRP.CMD_REMOVE_WATCHPOINT:    // 43
+                //    Commands.RemoveWatchpoint();
+                //    break;
 
                 default:
                     throw new Exception("Unexpected command: " + command.ToString());
