@@ -952,11 +952,12 @@ namespace DeZogPlugin
         {
             // Get data
             ushort start = CSpectSocket.GetDataWord();
+            byte bankPlus1 = CSpectSocket.GetDataByte();
             ushort size = CSpectSocket.GetDataWord();
             ushort end = (ushort)(start + size);
             byte access = CSpectSocket.GetDataByte();
             if (Log.Enabled)
-                Log.WriteLine("AddWatchpoint: address={0:X4}, size={1}", start, size);
+                Log.WriteLine("AddWatchpoint: address={0:X4}, bankPlus1={1}, size={1}", start, bankPlus1, size);
             // condition is not used
             var cspect = Main.CSpect;
             // Read
@@ -989,6 +990,7 @@ namespace DeZogPlugin
         {
             // Get data
             ushort start = CSpectSocket.GetDataWord();
+            byte _bankPlus1 = CSpectSocket.GetDataByte();
             ushort size = CSpectSocket.GetDataWord();
             ushort end = (ushort)(start + size);
             var cspect = Main.CSpect;
@@ -1300,39 +1302,16 @@ namespace DeZogPlugin
         public static void GetSupportedCommands()
         {
             // No error
-            InitData(7);
+            InitData(6);
             SetByte(0b1111_1110);   // 0-7: CMD_INIT - CMD_PAUSE
             SetByte(0b0001_1111);   // 8-15: CMD_READ_MEM - CMD_SET_BORDER
             SetByte(0b1111_1111);   // 16-23: CMD_GET_SPRITES_PALETTE - CMD_INTERRUPT_ON_OFF
             SetByte(0b0000_0000);   // 24-31: Nothing
             SetByte(0b0000_0000);   // 32-39: Nothing
             SetByte(0b0000_1111);   // 40-47: CMD_ADD_BREAKPOINT - CMD_REMOVE_WATCHPOINT
-            SetByte(0b0000_0000);   // 48-55: CMD_READ_STATE/CMD_WRITE_STATE not implemented
 
             // Respond
             CSpectSocket.SendResponse(Data);
-        }
-
-        /**
-         * Returns the state.
-         */
-        public static void ReadState()
-        {
-            // Not implemented: No CSpect interface yet.
-
-            // Respond
-            CSpectSocket.SendResponse();
-        }
-
-        /**
-         * Writes the state.
-         */
-        public static void WriteState()
-        {
-            // Not implemented: No CSpect interface yet.
-
-            // Respond
-            CSpectSocket.SendResponse();
         }
 
 

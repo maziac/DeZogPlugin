@@ -430,15 +430,6 @@ namespace DeZogPlugin
                     Commands.RemoveWatchpoint();
                     break;
 
-
-                case DZRP.CMD_READ_STATE:   // 50
-                    Commands.ReadState();
-                    break;
-
-                case DZRP.CMD_WRITE_STATE:  // 51
-                    Commands.WriteState();
-                    break;
-
                 default:
                     throw new Exception("Unexpected command: " + command.ToString());
             }
