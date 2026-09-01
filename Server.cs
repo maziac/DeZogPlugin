@@ -43,6 +43,9 @@ namespace DeZogPlugin
         CMD_EXEC_ASM = 22,
         CMD_INTERRUPT_ON_OFF = 23,
 
+        // Supported commands
+        CMD_GET_SUPPORTED_COMMANDS = 24,
+
         // Breakpoint
         CMD_ADD_BREAKPOINT = 40,
         CMD_REMOVE_BREAKPOINT = 41,
@@ -323,111 +326,116 @@ namespace DeZogPlugin
             DZRP command = (DZRP)data[HEADER_LEN_LENGTH + 1];
             switch (command)
             {
-                case DZRP.CMD_INIT:
+                case DZRP.CMD_INIT: // 1
                     Commands.CmdInit();
                     break;
 
-                case DZRP.CMD_CLOSE:
+                case DZRP.CMD_CLOSE:    // 2
                     Commands.CmdClose();
                     break;
 
-                case DZRP.CMD_GET_REGISTERS:
+                case DZRP.CMD_GET_REGISTERS:    // 3
                     Commands.GetRegisters();
                     break;
 
-                case DZRP.CMD_SET_REGISTER:
+                case DZRP.CMD_SET_REGISTER: // 4
                     Commands.SetRegister();
                     break;
 
-                case DZRP.CMD_WRITE_BANK:
+                case DZRP.CMD_WRITE_BANK:   // 5
                     Commands.WriteBank();
                     break;
 
-                case DZRP.CMD_CONTINUE:
+                case DZRP.CMD_CONTINUE: // 6
                     Commands.Continue();
                     break;
 
-                case DZRP.CMD_PAUSE:
+                case DZRP.CMD_PAUSE:    // 7
                     Commands.Pause();
                     break;
 
-                case DZRP.CMD_READ_MEM:
+                case DZRP.CMD_READ_MEM: // 8
                     Commands.ReadMem();
                     break;
 
-                case DZRP.CMD_WRITE_MEM:
+                case DZRP.CMD_WRITE_MEM:    // 9
                     Commands.WriteMem();
                     break;
 
-                case DZRP.CMD_SET_SLOT:
+                case DZRP.CMD_SET_SLOT: // 10
                     Commands.SetSlot();
                     break;
-
-                case DZRP.CMD_GET_TBBLUE_REG:
+                        
+                case DZRP.CMD_GET_TBBLUE_REG:   // 11
                     Commands.GetTbblueReg();
                     break;
 
-                case DZRP.CMD_SET_BORDER:
+                case DZRP.CMD_SET_BORDER:   // 12
                     Commands.SetBorder();
                     break;
 
 
-                case DZRP.CMD_GET_SPRITES_PALETTE:
+                case DZRP.CMD_GET_SPRITES_PALETTE:  // 16
                     Commands.GetSpritesPalette();
                     break;
 
-                case DZRP.CMD_GET_SPRITES_CLIP_WINDOW_AND_CONTROL:
+                case DZRP.CMD_GET_SPRITES_CLIP_WINDOW_AND_CONTROL:  // 17
                     Commands.GetSpritesClipWindow();
                     break;
 
-                case DZRP.CMD_GET_SPRITES:
+                case DZRP.CMD_GET_SPRITES:  // 18
                     Commands.GetSprites();
                     break;
 
-                case DZRP.CMD_GET_SPRITE_PATTERNS:
+                case DZRP.CMD_GET_SPRITE_PATTERNS:  // 19
                     Commands.GetSpritePatterns();
                     break;
 
 
-                case DZRP.CMD_READ_PORT:
+                case DZRP.CMD_READ_PORT:    // 20
                     Commands.ReadPort();
                     break;
 
-                case DZRP.CMD_WRITE_PORT:
+                case DZRP.CMD_WRITE_PORT:   // 21
                     Commands.WritePort();
                     break;
 
-                case DZRP.CMD_EXEC_ASM:
+                case DZRP.CMD_EXEC_ASM: // 22
                     Commands.ExecAsm();
                     break;
 
-                case DZRP.CMD_INTERRUPT_ON_OFF:
+                case DZRP.CMD_INTERRUPT_ON_OFF: // 23
                     Commands.InterruptOnOff();
                     break;
 
 
-                case DZRP.CMD_ADD_BREAKPOINT:
+                case DZRP.CMD_GET_SUPPORTED_COMMANDS:   // 24
+                    Commands.GetSupportedCommands();
+                    break;
+
+
+                case DZRP.CMD_ADD_BREAKPOINT:   // 40
                     Commands.AddBreakpoint();
                     break;
 
-                case DZRP.CMD_REMOVE_BREAKPOINT:
+                case DZRP.CMD_REMOVE_BREAKPOINT:    // 41
                     Commands.RemoveBreakpoint();
                     break;
 
-                case DZRP.CMD_ADD_WATCHPOINT:
+                case DZRP.CMD_ADD_WATCHPOINT:   // 42
                     Commands.AddWatchpoint();
                     break;
 
-                case DZRP.CMD_REMOVE_WATCHPOINT:
+                case DZRP.CMD_REMOVE_WATCHPOINT:    // 43
                     Commands.RemoveWatchpoint();
                     break;
 
 
-                case DZRP.CMD_READ_STATE:
+                case DZRP.CMD_READ_STATE:   // 50
                     Commands.ReadState();
                     break;
 
-                case DZRP.CMD_WRITE_STATE:
+                case DZRP.CMD_WRITE_STATE:  // 51
                     Commands.WriteState();
                     break;
 
