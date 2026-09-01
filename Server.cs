@@ -226,6 +226,8 @@ namespace DeZogPlugin
                 {
                     // Disconnected
                     Log.WriteLine("Disconnected.");
+                    // Stop DeZog debugging (enter CSpect debugger)
+                    Main.CSpect.Debugger(Plugin.eDebugCommand.Enter);
                     // Restart listener
                     StartListening();
                     return;
