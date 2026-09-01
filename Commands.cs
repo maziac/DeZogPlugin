@@ -26,7 +26,7 @@ namespace DeZogPlugin
      */
     public class Commands
     {
-        protected static byte[] DZRP_VERSION = { 2, 0, 0 };
+        protected static byte[] DZRP_VERSION = { 2, 2, 0 };
 
         /**
          * The break reason.
@@ -1291,6 +1291,26 @@ namespace DeZogPlugin
 
             // Respond
             CSpectSocket.SendResponse();
+        }
+
+
+        /**
+         * Returns the supported DZRP commands.
+         */
+        public static void GetSupportedCommands()
+        {
+            // No error
+            InitData(7);
+            SetByte(0b1111_1110);   // 0-7: CMD_INIT - CMD_PAUSE
+            SetByte(0b0001_1111);   // 8-15: CMD_READ_MEM - CMD_SET_BORDER
+            SetByte(0b1111_1111);   // 16-23: CMD_GET_SPRITES_PALETTE - CMD_INTERRUPT_ON_OFF
+            SetByte(0b0000_0000);   // 24-31: Nothing
+            SetByte(0b0000_0000);   // 32-39: Nothing
+            SetByte(0b0000_1111);   // 40-47: CMD_ADD_BREAKPOINT - CMD_REMOVE_WATCHPOINT
+            SetByte(0b0000_0000);   // 48-55: CMD_READ_STATE/CMD_WRITE_STATE not implemented
+
+            // Respond
+            CSpectSocket.SendResponse(Data);
         }
 
         /**

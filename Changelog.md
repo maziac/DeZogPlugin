@@ -1,6 +1,10 @@
 # Changelog
 
 ## 2.3.0
+- Supprot for DZRP 2.2.0. Added DZRP commands:
+  - CMD_GT_SUPPORTED_COMMANDS
+
+## 2.3.0
 - Added DZRP commands:
   - CMD_INTERRUPT_ON_OFF
   - CMD_EXEC_ASM
