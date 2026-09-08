@@ -905,10 +905,11 @@ namespace DeZogPlugin
             // Pause
             if (Log.Enabled)
                 Log.WriteLine("Pause: Stop debugger.");
-            ManualBreak = true;
-            Main.CSpect.Debugger(Plugin.eDebugCommand.Enter);
             // Respond
             CSpectSocket.SendResponse();
+            // Break
+            ManualBreak = true;
+            Main.CSpect.Debugger(Plugin.eDebugCommand.Enter);
         }
 
 

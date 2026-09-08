@@ -46,6 +46,9 @@ namespace DeZogPlugin
         // Supported commands
         CMD_GET_SUPPORTED_COMMANDS = 24,
 
+        // Misc
+        CMD_ENABLE_BREAK_ON_INTERRUPT = 25,
+
         // Breakpoint
         CMD_ADD_BREAKPOINT = 40,
         CMD_REMOVE_BREAKPOINT = 41,
