@@ -1,8 +1,9 @@
 # Changelog
 
-## 2.3.0
-- Supprot for DZRP 2.2.0. Added DZRP commands:
-  - CMD_GT_SUPPORTED_COMMANDS
+## 2.4.0
+- Support for DZRP 2.2.0. Added/changed DZRP commands:
+  - CMD_GET_SUPPORTED_COMMANDS
+  - CMD_WRITE_MEM/CMD_READ_MEM
 
 ## 2.3.0
 - Added DZRP commands:
